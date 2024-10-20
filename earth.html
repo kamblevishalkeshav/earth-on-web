@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Three.js Earth</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dat.gui/build/dat.gui.min.js"></script>
+<script>
+    let scene, camera, renderer, earthMesh, controls;
+    let gui, params;
+
+    function init() {
+        scene = new THREE.Scene();
+
+        // Setup renderer with antialias and alpha (transparency)
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 20;
+
+        ambientLight = new THREE.AmbientLight(0xcccccc, 0.4);
+        scene.add(ambientLight);
+        directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 3, 5);
+        scene.add(directionalLight);
+
+        const geometry = new THREE.SphereGeometry(10, 64, 64);
+        const material = new THREE.MeshPhongMaterial({
+            map: new THREE.TextureLoader().load('textures/1_earth_16k.jpg')
+        });
+        earthMesh = new THREE.Mesh(geometry, material);
+        scene.add(earthMesh);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1;
+
+        setupGUI();
+
+        animate();
+    }
+
+    function setupGUI() {
+        params = {
+            'Camera FOV': 75,
+            'Camera Zoom': camera.zoom,
+            'Antialias': true,
+            'Alpha': true,
+            'Rotation Speed': 0.005,
+            'Ambient Light Intensity': 0.4,
+            'Directional Light Intensity': 0.8,
+            'Earth Texture Opacity': 1,
+            'Earth Wireframe': false
+        };
+
+        gui = new dat.GUI();
+        gui.add(params, 'Camera FOV', 1, 150).onChange(function(value) {
+            camera.fov = value;
+            camera.updateProjectionMatrix();
+        });
+        gui.add(params, 'Camera Zoom', 0.1, 5).onChange(function(value) {
+            camera.zoom = value;
+            camera.updateProjectionMatrix();
+        });
+        gui.add(params, 'Antialias').onChange(function(value) {
+            renderer.setPixelRatio(value ? window.devicePixelRatio : 1);
+        });
+        gui.add(params, 'Alpha').onChange(function(value) {
+            renderer.setClearAlpha(value ? 0 : 1);
+        });
+        gui.add(params, 'Rotation Speed', 0, 0.1);
+        gui.add(params, 'Ambient Light Intensity', 0, 1).onChange(function(value) {
+            ambientLight.intensity = value;
+        });
+        gui.add(params, 'Directional Light Intensity', 0, 2).onChange(function(value) {
+            directionalLight.intensity = value;
+        });
+        gui.add(params, 'Earth Texture Opacity', 0, 1).onChange(function(value) {
+            earthMesh.material.opacity = value;
+            earthMesh.material.transparent = true;
+        });
+        gui.add(params, 'Earth Wireframe').onChange(function(value) {
+            earthMesh.material.wireframe = value;
+        });
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        earthMesh.rotation.y += params['Rotation Speed'];
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', onWindowResize, false);
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    init();
+</script>
+</body>
+</html>
