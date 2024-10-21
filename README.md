@@ -1,7 +1,8 @@
 # Three.js Earth with Satellite Simulation
 
 This project is a Three.js-based simulation that visualizes Earth with orbiting satellites. The simulation includes LEO, MEO, and GEO satellites, allowing interactive controls for adjusting satellite counts and camera settings. The project uses `dat.GUI` for easy parameter adjustment and includes realistic satellite visualization using sprites.
-
+![Earth with Satellite Simulation](images/openbexi_earth_orbit_ex1.png)
+![Earth with Satellite Simulation](images/openbexi_earth_orbit_ex2.png)
 ## Features
 
 - 3D Earth model rendered using Three.js.
