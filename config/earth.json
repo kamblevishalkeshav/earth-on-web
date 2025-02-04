@@ -1,0 +1,23 @@
+{
+  "id": 3,
+  "name": "Earth",
+  "diameter": 12756,
+  "mass": 5.97,
+  "gravity": 9.8,
+  "density": 5514,
+  "rotationPeriod": 23.9,
+  "lengthOfDay": 24,
+  "distanceFromParent": 149600000,
+  "orbitalPeriod": 365.2,
+  "orbitalVelocity": 29.8,
+  "orbitalInclination": 0,
+  "axialTilt": 23.4,
+  "orbitPositionOffset": 0,
+  "meanTemperature": 15,
+  "surfaceTemps": {
+    "min": 185,
+    "mean": 288,
+    "max": 331
+  },
+  "texture": "textures/1_earth_16k.jpg"
+}
