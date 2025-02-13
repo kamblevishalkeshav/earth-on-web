@@ -96,6 +96,14 @@
         globalScale = (earthConfig.diameter / 2) / 10;
     }
 
+    /**
+     * Simple utility function to detect mobile devices.
+     */
+    function isMobileDevice() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        return /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(userAgent);
+    }
+
     /**************************************************************
      * INITIALIZE SCENE, CAMERA, LIGHTS, AND EARTH MESH
      **************************************************************/
@@ -130,9 +138,16 @@
         // Create the Earth mesh (drawn as a sphere of radius 10 scene units).
         const earthRenderRadius = 10;
         const earthGeometry = new THREE.SphereGeometry(earthRenderRadius, 64, 64);
+
+        const textureUrl = isMobileDevice()
+            ? earthConfig.textureLight
+            : earthConfig.texture;
+
+        // Create the Earth material with the chosen texture
         const earthMaterial = new THREE.MeshPhongMaterial({
-            map: new THREE.TextureLoader().load(earthConfig.texture)
+            map: new THREE.TextureLoader().load(textureUrl)
         });
+
         earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
         scene.add(earthMesh);
 
@@ -381,7 +396,7 @@
      **************************************************************/
     function createGUI() {
         // Create the dat.GUI panel.
-        gui = new dat.GUI({ autoPlace: true });
+        gui = new dat.GUI({autoPlace: true});
         gui.domElement.style.backgroundColor = "#333"; // Dark background for a modern look.
         gui.domElement.style.padding = "10px";
 
@@ -488,7 +503,6 @@
             }
         }, 500);
     }
-
 
 
     function updateSatelliteList() {
