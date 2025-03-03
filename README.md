@@ -1,25 +1,10 @@
 # Three.js Earth with Satellite Simulation from TLE data
 
-This project uses Three.js and dat.GUI to simulate Earth with orbiting satellites using TLE data from [CelesTrak](https://celestrak.org/NORAD). It visualizes satellites in LEO, MEO, and GEO with realistic 3D positioning and interactive controls.
+This project uses Three.js and dat.GUI to simulate Earth with orbiting satellites using TLE data from [CelesTrak](https://celestrak.org/NORAD) and https://github.com/shashwatak/satellite-js (License: MIT). It visualizes satellites in LEO, MEO, and GEO with realistic 3D positioning and interactive controls.
 
 ## Live Demo
 
 [Live Demo](https://arcazj.github.io/openbexi_earth_orbit/index.html)
-
-## Code Details
-
-- **init()**: Sets up the Three.js scene (camera, renderer, lights, Earth mesh) and loads TLE data.
-- **loadConfigs()**: Loads JSON configuration files and computes scaling.
-- **setupTLESatellites()**: Loads TLE data, parses satellite parameters, and creates satellite sprites.
-- **calculateOrbitParameters()**: Parses TLE lines to extract orbital parameters.
-   - *LEO*: Extracts RAAN and argument of perigee for full ECI transformation.
-   - *GEO/MEO*: Uses a simpler calculation.
-- **computeECIPosition()**: Converts orbital parameters to 3D Earth-Centered Inertial (ECI) coordinates.
-- **updateVisibilityCone()**: Draws a cone representing the satellite’s line-of-sight.
-- **updateCoverageArea()**: Draws a spherical footprint on Earth matching the base of the visibility cone.
-- **selectSatellite()**: Highlights a selected satellite (increases scale, changes color to red, applies pulsing) and updates satellite info.
-- **createGUI()**: Builds the dat.GUI interface with filters, orbit options, separators, and version info.
-- **animate()**: Updates satellite positions and visual effects continuously.
 
 
 # Three.js Earth with Random Satellite Simulation
