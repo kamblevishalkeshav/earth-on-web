@@ -1,24 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Three.js SES Satellite Simulation – LEO vs. GEO/MEO Calculations</title>
+    <meta charset="UTF-8">
+    <title>Satellite Simulation – Filtering + Satellite Count</title>
     <style>
-        /* Remove default margins so the canvas fills the window */
-        body {
-            margin: 0;
-        }
-
-        /* Ensure the canvas displays as a block element */
-        canvas {
-            display: block;
-        }
-
-        /* Ensure dat.GUI panel appears above the canvas */
-        .dg {
-            z-index: 1000 !important;
-        }
-
-        /* Style for the satellite information panel */
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        .dg { z-index: 9999 !important; }
         #satelliteInfo {
             margin-top: 10px;
             color: #fff;
@@ -29,71 +17,80 @@
             font-size: 12px;
             white-space: pre-wrap;
         }
+        /* 2D Mercator container */
+        #mercatorContainer {
+            position: absolute;
+            top: 0; left: 0;
+            display: none; /* toggled by JS if "viewMercator" is true */
+            pointer-events: none;
+        }
+        .mapBackground {
+            position: relative;
+            width: 800px;
+            height: 400px;
+            background: url(textures/earthmap1k.jpg) no-repeat;
+            background-size: 100% 100%;
+        }
+        #mercatorCanvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 800px;
+            height: 400px;
+        }
     </style>
 </head>
 <body>
-<!-- Include Three.js, OrbitControls, and dat.GUI from CDN -->
+<!--
+  This example:
+    - Removes "Show Coverage" & "Show Visibility" from the GUI.
+    - Adds a read-only "Satellites Found" entry in the Filters folder.
+-->
+
+<!-- Three.js, OrbitControls, dat.GUI, satellite.js from CDNs -->
 <script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dat.gui/build/dat.gui.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/satellite.js/dist/satellite.min.js"></script>
 
 <script>
     /**************************************************************
-     * GLOBAL VARIABLES AND CONFIGURATION OBJECTS
+     * GLOBALS
      **************************************************************/
     let scene, camera, renderer, earthMesh, controls;
-    // Array to store satellite objects with computed orbital parameters.
-    let satellites = [];
-
-    // Global configuration objects loaded from external JSON files.
     let earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig;
-    // globalScale converts real-world kilometers into scene units so that Earth's radius becomes 10.
     let globalScale;
+    let mercatorCtx, mapWidth = 800, mapHeight = 400;
+    let satellites = [];
+    let gui, orbitLine=null;
+    // coverageCircle and visibilityCone are still in code,
+    // but no toggles in the GUI:
+    let coverageCircle=null, visibilityCone=null;
+    let currentSelectedSatellite=null, satelliteController=null;
 
-    // dat.GUI parameters for controlling display options.
-    let gui, guiParams = {
-        orbitTypeFilter: "ALL",      // Filter for orbit type (ALL, LEO, MEO, GEO)
-        companyFilter: "ALL COMPANY",  // Filter for satellite company
-        selectedSatellite: "",         // Dropdown selection for a satellite
-        showOrbit: false,              // Toggle orbit trajectory display
-        showCoverageArea: false,       // Toggle coverage area display
-        showVisibilityCone: false,     // Toggle visibility cone display
-        view2D: false,                 // (If 2D view is implemented)
-        P: 1000                      // Parameter used in coverage area calculations
+    // GUI parameters
+    const guiParams = {
+        orbitTypeFilter: "MEO",   // Default: show only MEO
+        companyFilter: "ALL COMPANY",
+        selectedSatellite: "None",
+        showOrbit: false,
+        // Removed showCoverageArea / showVisibilityCone from the GUI
+        view3D: true,
+        viewMercator: false
     };
-    // Extra geometry variables (orbit line, coverage circle, visibility cone).
-    let orbitLine = null, coverageCircle = null, visibilityCone = null;
-    let satelliteController = null;  // For the satellite selection dropdown.
-    let currentSelectedSatellite = null;
+
+    // We'll store the count in a separate object so we can "listen" to it in dat.GUI
+    const filterStats = {
+        satelliteCount: 0
+    };
 
     /**************************************************************
-     * UTILITY FUNCTION: fetchJSON
-     * Loads a JSON file from a given URL.
+     * UTILITY: fetchJSON
      **************************************************************/
     function fetchJSON(url) {
-        return fetch(url).then(response => {
-            if (!response.ok) {
-                throw new Error(`Failed to load ${url}: ${response.statusText}`);
-            }
-            return response.json();
+        return fetch(url).then(resp => {
+            if (!resp.ok) throw new Error(`Failed to load ${url}: ${resp.statusText}`);
+            return resp.json();
         });
-    }
-
-    /**************************************************************
-     * LOAD CONFIGURATION FILES
-     * Loads external JSON config files (earth, constants, satellite, scene, controls)
-     * and computes globalScale so that Earth's radius maps to 10 scene units.
-     **************************************************************/
-    async function loadConfigs() {
-        [earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig] =
-            await Promise.all([
-                fetchJSON('config/earth.json'),
-                fetchJSON('config/constants.json'),
-                fetchJSON('config/satellite.json'),
-                fetchJSON('config/scene.json'),
-                fetchJSON('config/controls.json')
-            ]);
-        globalScale = (earthConfig.diameter / 2) / 10;
     }
 
     /**
@@ -105,9 +102,29 @@
     }
 
     /**************************************************************
-     * INITIALIZE SCENE, CAMERA, LIGHTS, AND EARTH MESH
+     * LOAD CONFIGS
      **************************************************************/
-    function init() {
+    async function loadConfigs() {
+        [
+            earthConfig,
+            constantsConfig,
+            satelliteConfig,
+            sceneConfig,
+            controlsConfig
+        ] = await Promise.all([
+            fetchJSON('config/earth.json'),
+            fetchJSON('config/constants.json'),
+            fetchJSON('config/satellite.json'),
+            fetchJSON('config/scene.json'),
+            fetchJSON('config/controls.json')
+        ]);
+        globalScale = (earthConfig.diameter / 2) / 10; // Earth radius => 10
+    }
+
+    /**************************************************************
+     * INIT 3D
+     **************************************************************/
+    function init3D() {
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(
             sceneConfig.camera.fov,
@@ -116,792 +133,490 @@
             sceneConfig.camera.far
         );
         camera.position.set(...sceneConfig.camera.position);
-        camera.lookAt(0, 0, 0);
-
-        renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(
+        const ambient = new THREE.AmbientLight(
             sceneConfig.ambientLight.color,
             sceneConfig.ambientLight.intensity
         );
-        scene.add(ambientLight);
+        scene.add(ambient);
 
-        const directionalLight = new THREE.DirectionalLight(
+        const dirLight = new THREE.DirectionalLight(
             sceneConfig.directionalLight.color,
             sceneConfig.directionalLight.intensity
         );
-        directionalLight.position.set(...sceneConfig.directionalLight.position);
-        scene.add(directionalLight);
+        dirLight.position.set(...sceneConfig.directionalLight.position);
+        scene.add(dirLight);
 
-        // Create the Earth mesh (drawn as a sphere of radius 10 scene units).
-        const earthRenderRadius = 10;
-        const earthGeometry = new THREE.SphereGeometry(earthRenderRadius, 64, 64);
-
+        // Earth
         const textureUrl = isMobileDevice()
             ? earthConfig.textureLight
             : earthConfig.texture;
-
-        // Create the Earth material with the chosen texture
-        const earthMaterial = new THREE.MeshPhongMaterial({
+        const earthGeom = new THREE.SphereGeometry(10, 64, 64);
+        const earthMat = new THREE.MeshPhongMaterial({
             map: new THREE.TextureLoader().load(textureUrl)
         });
-
-        earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
+        earthMesh = new THREE.Mesh(earthGeom, earthMat);
         scene.add(earthMesh);
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = controlsConfig.enableDamping;
         controls.dampingFactor = controlsConfig.dampingFactor;
 
-        // Load TLE data and setup satellites.
-        setupTLESatellites('json/tle/TLE.json');
-
-        animate();
     }
 
     /**************************************************************
-     * SET UP SATELLITES FROM TLE DATA
-     * Loads the TLE JSON file, computes orbital parameters using our new function,
-     * creates a sprite for each satellite, and adds it to the scene.
+     * INIT 2D MERCATOR
+     **************************************************************/
+    function initMercatorView() {
+        const container = document.createElement("div");
+        container.id = "mercatorContainer";
+        container.style.position = "absolute";
+        container.style.top = "0";
+        container.style.left = "0";
+        container.style.display = "none";
+        container.style.pointerEvents = "none";
+
+        const mapDiv = document.createElement("div");
+        mapDiv.className = "mapBackground";
+        mapDiv.style.width = "800px";
+        mapDiv.style.height = "400px";
+
+        const mercCanvas = document.createElement("canvas");
+        mercCanvas.id = "mercatorCanvas";
+        mercCanvas.width = 800;
+        mercCanvas.height = 400;
+        mapDiv.appendChild(mercCanvas);
+
+        container.appendChild(mapDiv);
+        document.body.appendChild(container);
+
+        mercatorCtx = mercCanvas.getContext("2d");
+        mapWidth = mercCanvas.width;
+        mapHeight = mercCanvas.height;
+    }
+
+    /**************************************************************
+     * SETUP TLES (satellite.js)
      **************************************************************/
     async function setupTLESatellites(jsonFilePath) {
         try {
-            const response = await fetch(jsonFilePath);
-            if (!response.ok) throw new Error(`Failed to fetch TLE data: ${response.statusText}`);
-            const tleData = await response.json();
+            const resp = await fetch(jsonFilePath);
+            if (!resp.ok) throw new Error(`Failed to fetch TLE data: ${resp.statusText}`);
+            const tleData = await resp.json();
             if (!Array.isArray(tleData)) throw new TypeError("TLE data is not an array");
 
             const textureLoader = new THREE.TextureLoader();
-            const satelliteTexture = textureLoader.load(satelliteConfig.icon);
-            const baseMaterial = new THREE.SpriteMaterial({map: satelliteTexture});
+            const baseMaterial = new THREE.SpriteMaterial({
+                map: textureLoader.load(satelliteConfig.icon)
+            });
 
-            // Remove any existing satellites from the scene.
-            satellites.forEach(sat => scene.remove(sat.mesh));
-            satellites.length = 0;
+            satellites.forEach(s => scene.remove(s.mesh));
+            satellites.length=0;
 
-            tleData.forEach(data => {
-                const {company, satellite_name, norad_id, type, launch_date, tle_line1, tle_line2} = data;
-                // Compute orbital parameters. Pass the orbit type so that LEO gets the full calculation.
-                let orbitParams = calculateOrbitParameters(tle_line1, tle_line2, type);
-                // For LEO, we expect a full set (with RAAN etc.) and a true anomaly (nu) property.
-                // For GEO/MEO, orbitParams only includes meanAnomaly.
-                let pos;
-                if (type === "LEO") {
-                    // For LEO, use the full transformation.
-                    // Set initial true anomaly (ν) equal to the parsed mean anomaly.
-                    orbitParams.nu = orbitParams.meanAnomaly;
-                    pos = computeECIPosition(orbitParams);
-                } else {
-                    // For GEO/MEO, use the original (simplified) calculation.
-                    pos = new THREE.Vector3(
-                        orbitParams.rUnits * Math.cos(orbitParams.meanAnomaly),
-                        0,
-                        orbitParams.rUnits * Math.sin(orbitParams.meanAnomaly)
-                    );
-                    pos.applyAxisAngle(new THREE.Vector3(1, 0, 0), orbitParams.inclination);
-                }
-
-                // Create the satellite sprite.
-                const satSprite = new THREE.Sprite(baseMaterial.clone());
-                satSprite.scale.set(...satelliteConfig.scale);
-                satSprite.position.copy(pos);
-                scene.add(satSprite);
-
-                // Store the satellite object along with its computed parameters.
-                satellites.push({
-                    mesh: satSprite,
+            tleData.forEach(item => {
+                const {
                     company,
                     satellite_name,
                     norad_id,
-                    type,
+                    type,         // "LEO", "MEO", or "GEO"
                     launch_date,
                     tle_line1,
-                    tle_line2,
-                    ...orbitParams
+                    tle_line2
+                } = item;
+
+                const satrec = satellite.twoline2satrec(tle_line1, tle_line2);
+
+                const sprite = new THREE.Sprite(baseMaterial.clone());
+                sprite.scale.set(...satelliteConfig.scale);
+                scene.add(sprite);
+
+                satellites.push({
+                    mesh: sprite,
+                    satrec,
+                    orbitType: type,
+                    company,
+                    satellite_name,
+                    norad_id,
+                    launch_date,
+                    tle_line1,
+                    tle_line2
                 });
             });
-
-            createGUI();
-        } catch (error) {
-            console.error("Error in setupTLESatellites:", error);
+        } catch(err) {
+            console.error("Error in setupTLESatellites:", err);
         }
     }
 
     /**************************************************************
-     * CALCULATE ORBITAL PARAMETERS
-     *
-     * This function accepts a TLE and an orbitType parameter.
-     * - For "LEO": It extracts RAAN and the argument of perigee and calculates
-     *   the instantaneous radius using the elliptical orbit equation:
-     *       r = a · (1 – e²) / (1 + e·cos(ν))
-     *   (with ν approximated by the mean anomaly initially).
-     * - For GEO/MEO: It uses the original simpler calculation (r = a·(1 – e))
-     *   and does not include RAAN and ω.
-     **************************************************************/
-    function calculateOrbitParameters(tleLine1, tleLine2, orbitType) {
-        const mu = constantsConfig.mu;  // km³/s²
-        const R_earth = earthConfig.diameter / 2; // km
-
-        if (orbitType === "LEO") {
-            const inclination = parseFloat(tleLine2.slice(8, 16).trim()) * (Math.PI / 180);
-            const raan = parseFloat(tleLine2.slice(17, 25).trim()) * (Math.PI / 180);
-            const eccentricity = parseFloat("0." + tleLine2.slice(26, 33).trim());
-            const argPerigee = parseFloat(tleLine2.slice(34, 42).trim()) * (Math.PI / 180);
-            const meanAnomalyDeg = parseFloat(tleLine2.slice(44, 51).trim());
-            const meanAnomaly = meanAnomalyDeg * (Math.PI / 180);
-            const meanMotionRevsPerDay = parseFloat(tleLine2.slice(52, 63).trim());
-            if ([inclination, raan, eccentricity, argPerigee, meanAnomaly, meanMotionRevsPerDay].some(val => isNaN(val))) {
-                throw new Error("Invalid TLE data: Unable to parse orbital parameters for LEO.");
-            }
-            const meanMotionRadPerSec = (meanMotionRevsPerDay * 2 * Math.PI) / (24 * 3600);
-            const semiMajorAxisKm = Math.cbrt(mu / (meanMotionRadPerSec ** 2));
-            const nu = meanAnomaly; // Initial approximation for true anomaly
-            const rKm = semiMajorAxisKm * (1 - eccentricity ** 2) / (1 + eccentricity * Math.cos(nu));
-            const radiusUnits = rKm / globalScale;
-            const velocityKmS = Math.sqrt(mu * (2 / rKm - 1 / semiMajorAxisKm));
-            const velocityUnits = velocityKmS / globalScale;
-            return {
-                semiMajorAxisKm,
-                inclination,
-                raan,
-                eccentricity,
-                argPerigee,
-                meanAnomaly,
-                nu,
-                rUnits: radiusUnits,
-                velocity: velocityUnits
-            };
-        } else {  // GEO or MEO: use original calculation
-            // For GEO/MEO: use the original simpler calculation.
-            const meanMotionRevsPerDay = parseFloat(tleLine2.slice(52, 63).trim());
-            const eccentricity = parseFloat("0." + tleLine2.slice(26, 33).trim());
-            const inclination = parseFloat(tleLine2.slice(8, 16).trim()) * (Math.PI / 180);
-            const meanAnomalyDeg = parseFloat(tleLine2.slice(44, 51).trim());
-            const meanAnomaly = meanAnomalyDeg * (Math.PI / 180);
-            if ([meanMotionRevsPerDay, eccentricity, inclination, meanAnomaly].some(val => isNaN(val))) {
-                throw new Error("Invalid TLE data: Unable to parse orbital parameters for GEO/MEO.");
-            }
-            const meanMotionRadPerSec = (meanMotionRevsPerDay * 2 * Math.PI) / (24 * 3600);
-            const semiMajorAxisKm = Math.cbrt(constantsConfig.mu / (meanMotionRadPerSec ** 2));
-// For GEO/MEO, approximate r using the perigee distance.
-            const rKm = semiMajorAxisKm * (1 - eccentricity);
-            const radiusUnits = rKm / globalScale;
-            const velocityKmS = Math.sqrt(constantsConfig.mu * (2 / rKm - 1 / semiMajorAxisKm));
-            const velocityUnits = velocityKmS / globalScale;
-            return {
-                semiMajorAxisKm,
-                inclination,
-                meanAnomaly,
-                rUnits: radiusUnits,
-                velocity: velocityUnits,
-                eccentricity
-            };
-
-        }
-    }
-
-    /**************************************************************
-     * TRANSFORM ORBITAL POSITION TO ECI COORDINATES (LEO)
-     *
-     * For LEO satellites, uses the full transformation:
-     *
-     *   x = r * [cos(RAAN)*cos(ω+ν) - sin(RAAN)*sin(ω+ν)*cos(i)]
-     *   y = r * [sin(RAAN)*cos(ω+ν) + cos(RAAN)*sin(ω+ν)*cos(i)]
-     *   z = r * [sin(ω+ν)*sin(i)]
-     **************************************************************/
-    function computeECIPosition(orbitParams) {
-        const r = orbitParams.rUnits;
-        const RAAN = orbitParams.raan;
-        const i = orbitParams.inclination;
-        const omega = orbitParams.argPerigee;
-        const nu = orbitParams.nu;
-        const omegaPlusNu = omega + nu;
-        const cosRAAN = Math.cos(RAAN);
-        const sinRAAN = Math.sin(RAAN);
-        const cosOmegaNu = Math.cos(omegaPlusNu);
-        const sinOmegaNu = Math.sin(omegaPlusNu);
-        const cosi = Math.cos(i);
-        const sini = Math.sin(i);
-        const x = r * (cosRAAN * cosOmegaNu - sinRAAN * sinOmegaNu * cosi);
-        const y = r * (sinRAAN * cosOmegaNu + cosRAAN * sinOmegaNu * cosi);
-        const z = r * (sinOmegaNu * sini);
-        return new THREE.Vector3(x, y, z);
-    }
-
-    /**************************************************************
-     * ANIMATE LOOP
-     * Updates satellite positions based on their orbit type.
-     * For LEO satellites, it updates the true anomaly (ν), recalculates r via the elliptical equation,
-     * and transforms using the full ECI transformation.
-     * For GEO/MEO, it increments the mean anomaly and applies the simpler 2D polar plus inclination rotation.
-     **************************************************************/
-    function animate() {
-        requestAnimationFrame(animate);
-
-        // Update each satellite's position.
-        satellites.forEach(sat => {
-            if (sat.type === "LEO") {
-                let angleAdvance = sat.velocity * 0.01;
-                sat.nu += angleAdvance;
-                const a = sat.semiMajorAxisKm;
-                const e = sat.eccentricity;
-                const rKm = a * (1 - e ** 2) / (1 + e * Math.cos(sat.nu));
-                sat.rUnits = rKm / globalScale;
-                let newPos = computeECIPosition(sat);
-                sat.mesh.position.copy(newPos);
-            } else {
-                let currentAngle = Math.atan2(sat.mesh.position.z, sat.mesh.position.x);
-                let newAngle = currentAngle + sat.velocity * 0.01;
-                let newPos = new THREE.Vector3(
-                    sat.rUnits * Math.cos(newAngle),
-                    0,
-                    sat.rUnits * Math.sin(newAngle)
-                );
-                newPos.applyAxisAngle(new THREE.Vector3(1, 0, 0), sat.inclination);
-                sat.mesh.position.copy(newPos);
-            }
-        });
-
-        // If a satellite is selected, apply pulsing.
-        if (currentSelectedSatellite && currentSelectedSatellite.isSelected) {
-            // Compute a pulsing factor (oscillates between 0.8 and 1.2, for example).
-            const pulseFactor = 1 + 0.2 * Math.sin(performance.now() / 200);
-            const newScale = currentSelectedSatellite.baseSelectedScale.map(s => s * pulseFactor);
-            currentSelectedSatellite.mesh.scale.set(...newScale);
-            // Keep its color green.
-            currentSelectedSatellite.mesh.material.color.set(0xFF0000);
-        }
-
-
-        controls.update();
-        renderer.render(scene, camera);
-    }
-
-    function onWindowResize() {
-        // For a 3D (perspective) camera, update the aspect ratio and projection matrix.
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-
-        // Adjust the renderer size.
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    window.addEventListener('resize', onWindowResize, false);
-
-    /**************************************************************
-     * GUI CREATION (createGUI, updateSatelliteList, etc.)
-     * [For brevity, these functions are similar to previous versions.]
+     * CREATE GUI
      **************************************************************/
     function createGUI() {
-        // Create the dat.GUI panel.
-        gui = new dat.GUI({autoPlace: true});
-        gui.domElement.style.backgroundColor = "#333"; // Dark background for a modern look.
+        gui = new dat.GUI({ name: "Controls" });
+        gui.domElement.style.backgroundColor = "#2a2a2a";
         gui.domElement.style.padding = "10px";
+        gui.domElement.style.fontFamily = "sans-serif";
+        gui.domElement.style.fontSize = "13px";
+        gui.domElement.style.color = "#eee";
 
-        // ----- Filters Folder -----
-        let filterFolder = gui.addFolder("Filters");
+        // Filters
+        const filterFolder = gui.addFolder("Filters");
         filterFolder.add(guiParams, "orbitTypeFilter", ["ALL", "LEO", "MEO", "GEO"])
             .name("Orbit Type")
             .onChange(() => {
-                guiParams.showOrbit = false;
-                guiParams.showCoverageArea = false;
-                guiParams.showVisibilityCone = false;
-                toggleOrbitVisibility(false);
-                toggleCoverageArea(false);
-                toggleVisibilityCone(false);
+                guiParams.showOrbit = false; // reset
+                removeAllGeometry();
                 updateSatelliteList();
             });
-        let companies = satellites.map(sat => sat.company);
-        companies = Array.from(new Set(companies));
-        companies.sort();
+        let companies = satellites.map(s => s.company);
+        companies = Array.from(new Set(companies)).sort();
         companies.unshift("ALL COMPANY");
         filterFolder.add(guiParams, "companyFilter", companies)
             .name("Company")
             .onChange(() => {
-                guiParams.showOrbit = false;
-                guiParams.showCoverageArea = false;
-                guiParams.showVisibilityCone = false;
-                toggleOrbitVisibility(false);
-                toggleCoverageArea(false);
-                toggleVisibilityCone(false);
+                guiParams.showOrbit = false; // reset
+                removeAllGeometry();
                 updateSatelliteList();
             });
+
+        // Provide a read-only display of the count
+        filterFolder.add(filterStats, "satelliteCount").name("Satellites Found").listen();
+
         filterFolder.open();
 
-        // Add a separator after Filters folder.
-        let separator1 = document.createElement("hr");
-        separator1.style.width = "100%";
-        separator1.style.border = "1px solid #555";
-        separator1.style.margin = "10px 0";
-        gui.domElement.appendChild(separator1);
+        // View
+        const viewFolder = gui.addFolder("View");
+        viewFolder.add(guiParams, "view3D").name("3D Globe");
+        viewFolder.add(guiParams, "viewMercator").name("2D Mercator");
+        viewFolder.open();
 
-        // ----- Orbit Options Folder -----
-        let orbitFolder = gui.addFolder("Orbit Options");
-        orbitFolder.add(guiParams, "showOrbit")
-            .name("Show Orbit")
-            .onChange(toggleOrbitVisibility);
-        orbitFolder.add(guiParams, "showCoverageArea")
-            .name("Show Coverage Area")
-            .onChange(toggleCoverageArea);
-        orbitFolder.add(guiParams, "showVisibilityCone")
-            .name("Show Visibility Cone")
-            .onChange(toggleVisibilityCone);
-        orbitFolder.add(guiParams, "P", 0, 5000)
-            .name("P Parameter")
-            .onChange(updateSatelliteList);
+        // Orbit/Extras folder (only "showOrbit" remains)
+        const orbitFolder = gui.addFolder("Orbit/Extras");
+        orbitFolder.add(guiParams, "showOrbit").name("Show Orbit").onChange(() => {
+            if (currentSelectedSatellite) updateOrbitTrajectory(currentSelectedSatellite);
+        });
         orbitFolder.open();
 
-        // Add a separator after Orbit Options folder.
-        let separator2 = document.createElement("hr");
-        separator2.style.width = "100%";
-        separator2.style.border = "1px solid #555";
-        separator2.style.margin = "10px 0";
-        gui.domElement.appendChild(separator2);
-
-        // ----- Satellite List Section -----
+        // Satellite list
         updateSatelliteList();
 
-        // Add a separator before satellite info.
-        let separator3 = document.createElement("hr");
-        separator3.style.width = "100%";
-        separator3.style.border = "1px solid #fff"; // Brighter separator.
-        separator3.style.margin = "10px 0";
-        gui.domElement.appendChild(separator3);
-
-        // Create the satellite info div if it doesn't exist.
+        // Info panel
         let infoDiv = document.getElementById("satelliteInfo");
         if (!infoDiv) {
             infoDiv = document.createElement("div");
             infoDiv.id = "satelliteInfo";
-            infoDiv.style.padding = "5px";
-            infoDiv.style.color = "#fff";
-            infoDiv.style.fontFamily = "monospace";
-            infoDiv.style.fontSize = "12px";
             gui.domElement.appendChild(infoDiv);
         }
+        infoDiv.style.marginTop = "10px";
+        infoDiv.style.backgroundColor = "#444";
 
-        // Add another separator before the version footer.
-        let separator4 = document.createElement("hr");
-        separator4.style.width = "100%";
-        separator4.style.border = "1px solid #555";
-        separator4.style.margin = "10px 0";
-        gui.domElement.appendChild(separator4);
-
-        // ----- Version Footer -----
-        let versionInfo = document.createElement("div");
-        versionInfo.style.cssText = "color: #fff; padding: 5px; font-family: monospace; font-size: 12px; text-align: center;";
-        versionInfo.innerHTML = "Version V1.0 provided by openbexi";
-        gui.domElement.appendChild(versionInfo);
-
-        // Optionally reposition the dat.GUI close button.
+        // Reposition close button if desired
         setTimeout(() => {
-            let closeButton = gui.domElement.querySelector('.close-button');
-            if (closeButton) {
-                gui.domElement.appendChild(closeButton);
-            }
+            const closeBtn = gui.domElement.querySelector('.close-button');
+            if (closeBtn) gui.domElement.appendChild(closeBtn);
         }, 500);
     }
 
-
+    /**************************************************************
+     * UPDATE SATELLITE LIST (Filtering + Dropdown)
+     **************************************************************/
     function updateSatelliteList() {
-        const filtered = satellites.filter(sat => {
-            const orbitOk = (guiParams.orbitTypeFilter === "ALL") || (sat.type === guiParams.orbitTypeFilter);
-            const companyOk = (guiParams.companyFilter === "ALL COMPANY") || (sat.company === guiParams.companyFilter);
+        // Filter
+        const filtered = satellites.filter(s => {
+            const orbitOk = (guiParams.orbitTypeFilter === "ALL") || (s.orbitType === guiParams.orbitTypeFilter);
+            const companyOk = (guiParams.companyFilter === "ALL COMPANY") || (s.company === guiParams.companyFilter);
             return orbitOk && companyOk;
         });
-        const count = filtered.length;
-        let names = ["None"].concat(filtered.map(sat => sat.satellite_name));
 
-        guiParams.showOrbit = false;
-        guiParams.showCoverageArea = false;
-        guiParams.showVisibilityCone = false;
-        toggleOrbitVisibility(false);
-        toggleCoverageArea(false);
-        toggleVisibilityCone(false);
-
-        satellites.forEach(sat => {
-            sat.mesh.visible = filtered.includes(sat);
-            sat.mesh.scale.set(...satelliteConfig.scale);
-            sat.mesh.material.color.set(0xffffff);
+        // Hide satellites not in the filtered list
+        satellites.forEach(s => {
+            s.mesh.visible = filtered.includes(s);
+            s.mesh.material.color.set(0xffffff);
+            s.mesh.scale.set(...satelliteConfig.scale);
+            s.isSelected = false;
         });
 
-        if (satelliteController) {
-            gui.remove(satelliteController);
+        // If we had a selected sat that's no longer in filtered, reset
+        if (currentSelectedSatellite && !filtered.includes(currentSelectedSatellite)) {
+            currentSelectedSatellite = null;
+            guiParams.selectedSatellite = "None";
+            updateSatelliteInfo(null);
         }
+
+        // Update the satellite count
+        filterStats.satelliteCount = filtered.length;
+
+        // Build new dropdown
+        const names = ["None", ...filtered.map(s => s.satellite_name)];
+        if (satelliteController) gui.remove(satelliteController);
+
         guiParams.selectedSatellite = "None";
         satelliteController = gui.add(guiParams, "selectedSatellite", names)
             .name("Select Satellite")
-            .onChange(() => {
-                let sat = filtered.find(s => s.satellite_name === guiParams.selectedSatellite);
-                updateSatelliteInfo(sat, count);
-                if (sat) {
-                    selectSatellite(sat);
+            .onChange(name => {
+                const sat = filtered.find(x => x.satellite_name === name);
+                if (sat) selectSatellite(sat);
+                else {
+                    currentSelectedSatellite = null;
+                    updateSatelliteInfo(null);
                 }
             });
-        updateSatelliteInfo(null, count);
     }
 
-    function updateSatelliteInfo(sat, count) {
-        // Try to get the info div; if it doesn't exist, create it and append it to the dat.GUI DOM.
-        let infoDiv = document.getElementById("satelliteInfo");
-        if (!infoDiv) {
-            infoDiv = document.createElement("div");
-            infoDiv.id = "satelliteInfo";
-            gui.domElement.appendChild(infoDiv);
-        }
-
-        // Always show the header with the total satellite count.
-        let header = `<div style='font-weight:bold; margin-bottom:5px;'>Found ${count} Satellite(s)</div>`;
-
-        // If no satellite is selected, show only the header.
-        if (!sat) {
-            infoDiv.innerHTML = header;
-            return;
-        }
-
-        // Safely display numerical values.
-        let inclinationDisplay = (sat.inclination !== undefined) ? (sat.inclination * 180 / Math.PI).toFixed(2) : "N/A";
-        let semiMajorAxisDisplay = (sat.semiMajorAxisKm !== undefined) ? sat.semiMajorAxisKm.toFixed(2) : "N/A";
-        let eccentricityDisplay = (sat.eccentricity !== undefined) ? sat.eccentricity.toFixed(4) : "N/A";
-        let meanAnomalyDisplay = (sat.meanAnomaly !== undefined) ? (sat.meanAnomaly * 180 / Math.PI).toFixed(2) : "N/A";
-
-        // Calculate altitude (semiMajorAxis - Earth's radius in km).
-        let altitude = (sat.semiMajorAxisKm !== undefined && earthConfig)
-            ? (sat.semiMajorAxisKm - (earthConfig.diameter / 2)).toFixed(2)
-            : "N/A";
-
-        // Build up the satellite information HTML.
-        let info = header;
-        info += `<div>Company: ${sat.company}</div>`;
-        info += `<div>Satellite Name: ${sat.satellite_name}</div>`;
-        info += `<div>NORAD ID: ${sat.norad_id}</div>`;
-        info += `<div>Type: ${sat.type}</div>`;
-        info += `<div>Launch Date: ${sat.launch_date || "N/A"}</div>`;
-        info += `<div>Altitude: ${altitude} km</div>`;
-        info += `<div>Inclination: ${inclinationDisplay}°</div>`;
-        info += `<div>Semi-major Axis: ${semiMajorAxisDisplay} km</div>`;
-        info += `<div>Eccentricity: ${eccentricityDisplay}</div>`;
-
-        // For LEO satellites, display extra details.
-        if (sat.type === "LEO") {
-            let raanDisplay = (sat.raan !== undefined) ? (sat.raan * 180 / Math.PI).toFixed(2) : "N/A";
-            let argPerigeeDisplay = (sat.argPerigee !== undefined) ? (sat.argPerigee * 180 / Math.PI).toFixed(2) : "N/A";
-            info += `<div>RAAN: ${raanDisplay}°</div>`;
-            info += `<div>Arg. of Perigee: ${argPerigeeDisplay}°</div>`;
-            info += `<div>Mean Anomaly: ${meanAnomalyDisplay}°</div>`;
-        }
-
-        // Add the TLE lines in yellow.
-        info += `<div style="color:yellow; margin-top:8px;">TLE Line 1: ${sat.tle_line1}</div>`;
-        info += `<div style="color:yellow;">TLE Line 2: ${sat.tle_line2}</div>`;
-
-        infoDiv.innerHTML = info;
-    }
-
-    // --- Modify the selectSatellite function ---
+    /**************************************************************
+     * SELECT SATELLITE
+     **************************************************************/
     function selectSatellite(sat) {
+        currentSelectedSatellite = sat;
+        satellites.forEach(s => {
+            s.mesh.material.color.set(0xffffff);
+            s.mesh.scale.set(...satelliteConfig.scale);
+            s.isSelected = false;
+        });
+        sat.isSelected = true;
+        sat.mesh.material.color.set(0xff0000);
+        sat.mesh.scale.set(...satelliteConfig.scale.map(v => v*1.5));
+
+        updateSatelliteInfo(sat);
+
+        if (guiParams.showOrbit) updateOrbitTrajectory(sat);
+    }
+
+    /**************************************************************
+     * UPDATE SATELLITE INFO
+     **************************************************************/
+    function updateSatelliteInfo(sat) {
+        const infoDiv = document.getElementById("satelliteInfo");
+        if (!infoDiv) return;
+
         if (!sat) {
-            console.warn("Satellite not found.");
-            currentSelectedSatellite = null;
+            infoDiv.innerHTML = `<div style="font-weight:bold;">No satellite selected</div>`;
             return;
         }
-        currentSelectedSatellite = sat;
-
-        // Reset all satellites to default appearance.
-        satellites.forEach(s => {
-            s.mesh.scale.set(...satelliteConfig.scale);
-            s.mesh.material.color.set(0xffffff);
-            s.isSelected = false; // Clear selection flag.
-        });
-
-        // Mark the selected satellite.
-        sat.isSelected = true;
-        // Store its base scale for pulsing calculations.
-        // Multiply the original scale by 1.5
-        const baseScale = satelliteConfig.scale.map(s => s * 1.5);
-        sat.baseSelectedScale = baseScale;  // e.g., [baseX, baseY, baseZ]
-
-        // Set its scale and color immediately.
-        sat.mesh.scale.set(...baseScale);
-        sat.mesh.material.color.set(0xFF0000);
-
-        // (Optionally update camera view as before.)
-        let satPos = sat.mesh.position.clone();
-        let direction = satPos.clone().normalize();
-        let cameraDistance = sat.semiMajorAxisKm / globalScale + 20;
-        camera.position.copy(direction.multiplyScalar(cameraDistance));
-        camera.lookAt(0, 0, 0);
-        controls.target.set(0, 0, 0);
-        controls.update();
-
-        // Update any extra geometry if toggled.
-        if (guiParams.showOrbit) {
-            updateOrbitTrajectory(sat);
-        }
-        if (guiParams.showCoverageArea) {
-            updateCoverageArea(sat);
-        }
-        if (guiParams.showVisibilityCone) {
-            updateVisibilityCone(sat);
-        }
+        infoDiv.innerHTML = `
+    <div style="font-weight:bold; margin-bottom:1px;">Selected Satellite</div>
+    <div>Company: ${sat.company}</div>
+    <div>Name: ${sat.satellite_name}</div>
+    <div>Type: ${sat.orbitType}</div>
+    <div>Launch Date: ${sat.launch_date || "N/A"}</div>
+    <div>NORAD ID: ${sat.norad_id}</div>
+    <div style="color:yellow; margin-top:8px;">TLE Line 1: ${sat.tle_line1}</div>
+    <div style="color:yellow;">TLE Line 2: ${sat.tle_line2}</div>
+  `;
     }
 
-    function toggleOrbitVisibility(value) {
-        if (value) {
-            let selected = satellites.find(sat => sat.satellite_name === guiParams.selectedSatellite);
-            if (selected) updateOrbitTrajectory(selected);
-        } else {
-            if (orbitLine) {
-                scene.remove(orbitLine);
-                orbitLine = null;
-            }
-        }
+    /**************************************************************
+     * REMOVE ALL GEOMETRY (Orbit, Coverage, Visibility)
+     **************************************************************/
+    function removeAllGeometry() {
+        if (orbitLine) { scene.remove(orbitLine); orbitLine=null; }
+        // coverageCircle, visibilityCone remain but no toggles in the GUI
+        if (coverageCircle) { scene.remove(coverageCircle); coverageCircle=null; }
+        if (visibilityCone) { scene.remove(visibilityCone); visibilityCone=null; }
     }
 
-    function toggleCoverageArea(value) {
-        if (value) {
-            let selected = satellites.find(sat => sat.satellite_name === guiParams.selectedSatellite);
-            if (selected) updateCoverageArea(selected);
-        } else {
-            if (coverageCircle) {
-                scene.remove(coverageCircle);
-                coverageCircle = null;
-            }
-        }
-    }
-
-    function toggleVisibilityCone(value) {
-        if (value) {
-            let selected = satellites.find(sat => sat.satellite_name === guiParams.selectedSatellite);
-            if (selected) updateVisibilityCone(selected);
-        } else {
-            if (visibilityCone) {
-                scene.remove(visibilityCone);
-                visibilityCone = null;
-            }
-        }
-    }
-
-    // (Functions for updateOrbitTrajectory, updateCoverageArea, and updateVisibilityCone are omitted for brevity.)
-    // ---------------------------------------------------------------------
-    // Function to update the orbit trajectory (already defined earlier)
+    /**************************************************************
+     * ORBIT (we keep coverage/visibility code out of the GUI)
+     **************************************************************/
     function updateOrbitTrajectory(satellite) {
-        if (orbitLine) {
-            scene.remove(orbitLine);
-            orbitLine = null;
-        }
-        const segments = 128;
-        let points = [];
+        removeAllGeometry();
+        if (!guiParams.showOrbit) return;
 
-        if (satellite.type === "LEO") {
-            // For LEO: generate orbit points using full ECI transformation.
-            for (let i = 0; i <= segments; i++) {
-                let angle = (i / segments) * 2 * Math.PI;
-                // Create a temporary copy of orbital parameters with ν set to the current angle.
-                let tempParams = Object.assign({}, satellite);
-                tempParams.nu = angle;
-                let pos = computeECIPosition(tempParams);
-                points.push(pos);
-            }
-        } else {
-            // For GEO/MEO: use the original simpler polar method.
-            for (let i = 0; i <= segments; i++) {
-                let angle = (i / segments) * 2 * Math.PI;
-                let x = satellite.rUnits * Math.cos(angle);
-                let z = satellite.rUnits * Math.sin(angle);
-                let pos = new THREE.Vector3(x, 0, z);
-                pos.applyAxisAngle(new THREE.Vector3(1, 0, 0), satellite.inclination);
-                points.push(pos);
-            }
+        const now = new Date();
+        const meanMotion = satellite.satrec.no; // revs/min
+        const periodMins = 1440 / meanMotion;
+        const segments = 128;
+        const step = periodMins / segments;
+        const orbitPoints = [];
+
+        for (let i=0; i<=segments; i++) {
+            const future = new Date(now.getTime() + i*step*60000);
+            // If your version lacks .propagate, use .sgp4
+            const posVel = satellite.propagate(satellite.satrec, future);
+            if (!posVel.position) continue;
+
+            const jday = satellite.jday(
+                future.getUTCFullYear(),
+                future.getUTCMonth()+1,
+                future.getUTCDate(),
+                future.getUTCHours(),
+                future.getUTCMinutes(),
+                future.getUTCSeconds()
+            );
+            const gmst = satellite.gstime(jday);
+
+            const ecf = satellite.eciToEcf(posVel.position, gmst);
+            const kmToScene = 10 / 6371;
+            orbitPoints.push(new THREE.Vector3(ecf.x*kmToScene, ecf.y*kmToScene, ecf.z*kmToScene));
         }
-        let geometry = new THREE.BufferGeometry().setFromPoints(points);
-        let material = new THREE.LineBasicMaterial({color: 0xff0000, linewidth: 1});
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+        const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
         orbitLine = new THREE.LineLoop(geometry, material);
         scene.add(orbitLine);
     }
 
-    // ---------------------------------------------------------------------
-    // Revised updateCoverageArea: Calculates the coverage (footprint) circle
-    // on Earth's surface using the same geometry as updateVisibilityCone.
-    // It uses the formula:
-    //    α = arccos(R_earth / (R_earth + h))
-    //    footprintRadius (km) = R_earth * sin(α)
-    // where R_earth is Earth's radius (in km) and h is the satellite's altitude above Earth's surface.
-    // The footprint radius is then converted to scene units.
-    function updateCoverageArea(satellite) {
-        // Remove any existing coverage circle.
-        if (coverageCircle) {
-            scene.remove(coverageCircle);
-            coverageCircle = null;
-        }
+    /**************************************************************
+     * ANIMATION LOOP
+     **************************************************************/
+    function animate() {
+        requestAnimationFrame(animate);
 
-        // Earth's radius in km (from configuration)
-        const R = earthConfig.diameter / 2;
-        // Satellite altitude above Earth's surface in km.
-        const h = satellite.semiMajorAxisKm - R;
+        const now = new Date();
+        satellites.forEach(sat => {
+            if (!sat.mesh.visible) return;
+            const posVel = satellite.propagate(sat.satrec, now);
+            if (!posVel.position) return;
 
-        // Compute the ratio for the central angle.
-        // Normally, cos(γ) = R / (R + h) must be in the range [-1, 1].
-        // Clamp the value to ensure a valid argument for Math.acos.
-        const ratio = Math.min(Math.max(R / (R + h), -1), 1);
-        const gamma = Math.acos(ratio); // Angular radius in radians.
+            const jdayNow = satellite.jday(
+                now.getUTCFullYear(),
+                now.getUTCMonth()+1,
+                now.getUTCDate(),
+                now.getUTCHours(),
+                now.getUTCMinutes(),
+                now.getUTCSeconds()
+            );
+            const gmstNow = satellite.gstime(jdayNow);
 
-        // For a sphere drawn with radius 10 (scene units), the chord of the spherical circle
-        // corresponding to angular radius γ is given by: circleRadius = 10 · γ.
-        const circleRadius = 10 * gamma;
-
-        // Determine the sub-satellite point: project the satellite's position onto the sphere of radius 10.
-        const subSat = satellite.mesh.position.clone().normalize().multiplyScalar(10);
-
-        // Generate an orthonormal basis for the tangent plane at subSat.
-        let tangent = new THREE.Vector3();
-        if (Math.abs(subSat.x) < 0.0001 && Math.abs(subSat.z) < 0.0001) {
-            tangent.set(1, 0, 0);
-        } else {
-            tangent.set(-subSat.z, 0, subSat.x).normalize();
-        }
-        let binormal = new THREE.Vector3().crossVectors(subSat.clone().normalize(), tangent).normalize();
-
-        // Generate points along the spherical circle (coverage boundary)
-        // These points lie on the sphere (of radius 10) and are at a great-circle distance γ from subSat.
-        const segments = 64;
-        let circlePoints = [];
-        for (let i = 0; i <= segments; i++) {
-            let theta = (i / segments) * 2 * Math.PI;
-            // A point on the tangent plane offset:
-            let offset = tangent.clone().multiplyScalar(Math.cos(theta))
-                .add(binormal.clone().multiplyScalar(Math.sin(theta)))
-                .multiplyScalar(10 * Math.sin(gamma)); // 10*sin(γ) is the chord radius.
-            // The point on the sphere is obtained by rotating subSat by an angle γ toward the offset direction.
-            // One method is to use the spherical linear interpolation (slerp) between subSat and (subSat + offset).
-            // Compute the slerp factor: For a small angular distance, the result is approximately:
-            let point = subSat.clone().normalize().multiplyScalar(10); // starting point on sphere
-            // Create a candidate direction by adding the offset (which is tangent)
-            let candidate = subSat.clone().add(offset).normalize();
-            // Now slerp between subSat and candidate by factor (γ / (γ + some epsilon)) — however, here a simpler method is to assume
-            // that the arc distance on the sphere is approximated by: point = 10*[cos(γ)*subSat + sin(γ)*(offset normalized)]
-            let offsetDir = offset.clone().normalize();
-            point = subSat.clone().multiplyScalar(Math.cos(gamma))
-                .add(offsetDir.multiplyScalar(Math.sin(gamma) * 10));
-            // Normalize and scale back to radius 10.
-            point.normalize().multiplyScalar(10);
-            circlePoints.push(point);
-        }
-
-        const circleGeometry = new THREE.BufferGeometry().setFromPoints(circlePoints);
-        const circleMaterial = new THREE.LineBasicMaterial({color: 0xD3D3D3, linewidth: 1});
-        coverageCircle = new THREE.LineLoop(circleGeometry, circleMaterial);
-        scene.add(coverageCircle);
-    }
-
-
-    // ---------------------------------------------------------------------
-    // Function to update the satellite's visibility cone using a fixed half-angle.
-    // This version uses a fixed half-angle (30°) to compute the cone geometry.
-    // Steps:
-    // 1. Compute the satellite’s altitude above Earth's surface: h = semiMajorAxisKm - R_earth.
-    // 2. Compute the horizon distance: d = sqrt((R_earth + h)² - R_earth²).
-    // 3. Convert d to scene units (using conversionFactor = 10 / R_earth).
-    // 4. Set the cone's height equal to d_scene, and the base radius as coneHeight * tan(30°).
-    // 5. Create a cone geometry, translate it so the apex is at the origin,
-    //    and then rotate it so it points from the satellite to Earth's center.
-    // Revised updateVisibilityCone: Uses a fixed half-angle (30°) for the cone.
-    // This version centers the cone so that its tip (apex) is at (0,0,0) and then rotates
-    // it so that the cone extends from the satellite (at its tip) toward Earth's center.
-    // Revised updateVisibilityCone using a footprint-based method.
-    // This version computes the cone's base radius (footprint radius) as:
-    //     footprintRadius = R_earth * sin(α)
-    // with α = arccos(R_earth/(R_earth+h)), and uses the horizon distance
-    // (d = sqrt((R_earth+h)² - R_earth²)) as the cone height.
-    // Both values are converted from km to scene units.
-    // Revised updateVisibilityCone function that uses a different effective half-angle for MEO.
-    // For GEO (and LEO) we use a half-angle of 30° (as before), but for MEO we reduce it to 15°
-    function updateVisibilityCone(satellite) {
-        // If in 2D view, remove any existing cone and exit.
-        if (guiParams.view2D) {
-            if (visibilityCone) {
-                scene.remove(visibilityCone);
-                visibilityCone = null;
-            }
-            return;
-        }
-        if (visibilityCone) {
-            scene.remove(visibilityCone);
-            visibilityCone = null;
-        }
-
-        // Earth's radius in km.
-        const R = earthConfig.diameter / 2;
-        // Compute the satellite's altitude above Earth's surface (in km).
-        const h = satellite.semiMajorAxisKm - R;
-        // Compute the horizon (line-of-sight) distance (km) using:
-        //   d = sqrt((R+h)^2 - R^2)
-        const d = Math.sqrt(Math.pow(R + h, 2) - Math.pow(R, 2));
-
-        // Conversion factor to convert km to scene units.
-        // (globalScale was set so that Earth's radius (R km) maps to 10 scene units.)
-        const conversionFactor = 10 / R;
-        const coneHeight = d * conversionFactor;
-
-        // Use the provided effective half‑angle settings:
-        // For MEO: 26.3°; For others (GEO, LEO): 8.7°.
-        let effectiveHalfAngle;
-        if (satellite.type === "MEO") {
-            effectiveHalfAngle = 26.3 * Math.PI / 180;
-        } else {
-            effectiveHalfAngle = 8.7 * Math.PI / 180;
-        }
-
-        // Instead of computing the footprint using Earth's geometry (which may yield too large a base for MEO),
-        // we now compute the cone's base radius as:
-        //    coneRadius = coneHeight * tan(effectiveHalfAngle)
-        const coneRadius = coneHeight * Math.tan(effectiveHalfAngle);
-
-        // Create the cone geometry.
-        // THREE.ConeGeometry by default (derived from CylinderGeometry) has its tip at (0, +height/2, 0)
-        // and its base centered at (0, -height/2, 0). We translate it so that the apex (tip) is at (0,0,0).
-        let coneGeom = new THREE.ConeGeometry(coneRadius, coneHeight, 32, 1, true);
-        coneGeom.translate(0, -coneHeight / 2, 0);
-
-        // Create a semi-transparent material.
-        const coneMat = new THREE.MeshBasicMaterial({
-            color: 0xD3D3D3,
-            opacity: 0.3,
-            transparent: true,
-            side: THREE.DoubleSide
+            const ecf = satellite.eciToEcf(posVel.position, gmstNow);
+            const kmToScene = 10/6371;
+            sat.mesh.position.set(ecf.x*kmToScene, ecf.y*kmToScene, ecf.z*kmToScene);
         });
 
-        visibilityCone = new THREE.Mesh(coneGeom, coneMat);
+        if (guiParams.view3D) {
+            controls.update();
+            renderer.render(scene, camera);
+            renderer.domElement.style.display = "block";
+        } else {
+            renderer.domElement.style.display = "none";
+        }
 
-        // Compute the direction from the satellite to Earth's center.
-        let satPos = satellite.mesh.position.clone();
-        let targetDir = satPos.clone().normalize().negate(); // Direction from satellite to center.
-
-        // The cone's default geometry (after translation) points downwards along (0, -1, 0).
-        // Compute the rotation (quaternion) that maps (0, -1, 0) to the target direction.
-        let defaultDir = new THREE.Vector3(0, -1, 0);
-        let quaternion = new THREE.Quaternion().setFromUnitVectors(defaultDir, targetDir);
-        visibilityCone.quaternion.copy(quaternion);
-
-        // Position the cone so that its tip (apex) is exactly at the satellite's position.
-        visibilityCone.position.copy(satPos);
-        scene.add(visibilityCone);
+        if (guiParams.viewMercator) {
+            document.getElementById('mercatorContainer').style.display = "block";
+            updateMercatorMap();
+        } else {
+            document.getElementById('mercatorContainer').style.display = "none";
+        }
     }
 
     /**************************************************************
-     * APPLICATION ENTRY POINT
+     * 2D MERCATOR
+     **************************************************************/
+    function updateMercatorMap() {
+        if (!mercatorCtx) return;
+        mercatorCtx.clearRect(0,0,mapWidth,mapHeight);
+
+        // (Optional) day/night shading
+        drawDayNightTerminator();
+
+        const now = new Date();
+        const jdayNow = satellite.jday(
+            now.getUTCFullYear(),
+            now.getUTCMonth()+1,
+            now.getUTCDate(),
+            now.getUTCHours(),
+            now.getUTCMinutes(),
+            now.getUTCSeconds()
+        );
+        const gmstNow = satellite.gstime(jdayNow);
+
+        satellites.forEach(sat => {
+            if (!sat.mesh.visible) return;
+            const posVel = satellite.propagate(sat.satrec, now);
+            if (!posVel.position) return;
+            const geo = satellite.eciToGeodetic(posVel.position, gmstNow);
+            const latDeg = satellite.degreesLat(geo.latitude);
+            const lonDeg = satellite.degreesLong(geo.longitude);
+
+            const pt = latLonToMercator(latDeg, lonDeg);
+            mercatorCtx.beginPath();
+            mercatorCtx.arc(pt.x, pt.y, 4, 0, 2*Math.PI);
+            mercatorCtx.fillStyle = sat.isSelected ? "#ff0000" : "#00ff00";
+            mercatorCtx.fill();
+
+            mercatorCtx.font="11px sans-serif";
+            mercatorCtx.fillStyle="#fff";
+            mercatorCtx.fillText(sat.satellite_name, pt.x+6, pt.y);
+        });
+    }
+
+    function latLonToMercator(latDeg, lonDeg) {
+        const x = (lonDeg+180)*(mapWidth/360);
+        const latRad= latDeg*Math.PI/180;
+        const mercN= Math.log(Math.tan((Math.PI/4)+(latRad/2)));
+        const y= (mapHeight/2)-(mapWidth*mercN/(2*Math.PI));
+        return { x, y };
+    }
+
+    // Simple day/night terminator
+    function drawDayNightTerminator(){
+        const now=new Date();
+        const hoursUTC= now.getUTCHours()+ now.getUTCMinutes()/60;
+        const subSolarLon= (hoursUTC*15)-180;
+        const dayOfYear= dayOfYearNumber(now);
+        const decl= 23.44*Math.sin((2*Math.PI/365)*(dayOfYear-81));
+        const subSolarLat= decl;
+
+        const segments=36, points=[];
+        for (let i=0;i<=segments;i++){
+            const frac=i/segments;
+            const lat= subSolarLat+(frac*180-90);
+            const lon= subSolarLon+180;
+            points.push(latLonToMercator(lat, wrapLon(lon)));
+        }
+        mercatorCtx.beginPath();
+        mercatorCtx.moveTo(0,0);
+        mercatorCtx.lineTo(mapWidth,0);
+        for(let i=0;i<points.length;i++){
+            mercatorCtx.lineTo(points[i].x, points[i].y);
+        }
+        mercatorCtx.lineTo(mapWidth,mapHeight);
+        mercatorCtx.lineTo(0,mapHeight);
+        mercatorCtx.closePath();
+        mercatorCtx.fillStyle="rgba(0,0,0,0.4)";
+        mercatorCtx.fill();
+    }
+
+    function wrapLon(lon){
+        while(lon>180) lon-=360;
+        while(lon<-180) lon+=360;
+        return lon;
+    }
+    function dayOfYearNumber(d){
+        const start=new Date(d.getFullYear(),0,0);
+        const diff=d-start+(start.getTimezoneOffset()-d.getTimezoneOffset())*60000;
+        return Math.floor(diff/(1000*60*60*24));
+    }
+
+    /**************************************************************
+     * WINDOW RESIZE
+     **************************************************************/
+    function onWindowResize() {
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth,window.innerHeight);
+    }
+    window.addEventListener('resize', onWindowResize);
+
+    /**************************************************************
+     * START
      **************************************************************/
     async function start() {
         try {
             await loadConfigs();
-            init();
-        } catch (error) {
-            console.error("Error during initialization:", error);
+            init3D();
+            initMercatorView();
+            await setupTLESatellites('json/tle/TLE.json');
+            createGUI();
+            // Filter to MEO by default => showOrbit = false
+            updateSatelliteList();
+            animate();
+        } catch(e) {
+            console.error("Error during init:", e);
         }
     }
-
     start();
 </script>
 </body>
