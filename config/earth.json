@@ -19,5 +19,6 @@
     "mean": 288,
     "max": 331
   },
-  "texture": "textures/1_earth_16k.jpg"
+  "texture": "textures/1_earth_16k.jpg",
+  "textureLight": "textures/earthmap1k.jpg"
 }
