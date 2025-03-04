@@ -604,6 +604,20 @@
         return Math.floor(diff/(1000*60*60*24));
     }
 
+    function createSatellite3D(sat, textureUrl) {
+        const textureLoader = new THREE.TextureLoader();
+        const cubeGeometry = new THREE.BoxGeometry(1, 1, 0);
+        const cubeMaterial = new THREE.MeshStandardMaterial({
+            map: textureLoader.load(textureUrl),
+            // If your texture has an alpha channel (PNG), allow transparency:
+            transparent: true,
+            alphaTest: 0.5, // optionally cut off fully/partly transparent pixels
+        });
+        const cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
+
+        return cubeMesh;
+    }
+
     /**************************************************************
      * WINDOW RESIZE
      **************************************************************/
