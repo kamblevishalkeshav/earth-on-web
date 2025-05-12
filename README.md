@@ -28,7 +28,7 @@ Below are visualizations of OneWeb and Starlink satellite constellations:
 - Adjustable inclination and rotation effects for LEO and MEO satellites.
 
 # Roadmap
-The Mercator view is still a work in progress. I haven’t quite found the right approach or the right prompt—to get helpful guidance from ChatGPT to complete it.
+The Mercator view is still a work in progress. I haven’t yet found the right approach or the right prompt—to get helpful guidance from ChatGPT to complete it. I'm currently using the O3 version with deep thinking enabled.
 
 # License
 
