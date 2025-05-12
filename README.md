@@ -8,7 +8,7 @@ This project uses Three.js and dat.GUI to simulate Earth with orbiting satellite
 
 
 # Three.js Earth with Random Satellite Simulation
-The next project is a Three.js-based simulation that visualizes Earth with orbiting satellites. The simulation includes three types of satellite orbits: Low Earth Orbit (LEO), Medium Earth Orbit (MEO), and Geostationary Orbit (GEO). Users can interactively adjust the number of satellites in each orbit, as well as modify camera settings like Field of View (FOV) and Zoom.
+The  project is a Three.js-based simulation that visualizes Earth with orbiting satellites. The simulation includes three types of satellite orbits: Low Earth Orbit (LEO), Medium Earth Orbit (MEO), and Geostationary Orbit (GEO). Users can interactively adjust the number of satellites in each orbit, as well as modify camera settings like Field of View (FOV) and Zoom.
 
 # Constellation Examples
 Below are visualizations of OneWeb and Starlink satellite constellations:  
@@ -16,7 +16,7 @@ Below are visualizations of OneWeb and Starlink satellite constellations:
 ![Earth with Satellite Simulation](images/openbexi_earth_orbit_ONEWEB.PNG)
 ![Earth with Satellite Simulation](images/openbexi_earth_orbit_STARLINK.PNG)
 
-## Features
+# Features
 
 - 3D Earth model rendered using Three.js.
 - Visualization of three types of satellite orbits: Low Earth Orbit (LEO), Medium Earth Orbit (MEO), and Geostationary Orbit (GEO).
@@ -27,15 +27,12 @@ Below are visualizations of OneWeb and Starlink satellite constellations:
 - Satellites are displayed as sprites for better performance and realistic visualization.
 - Adjustable inclination and rotation effects for LEO and MEO satellites.
 
-License
+# Roadmap
+The Mercator view is still a work in progress. I haven’t quite found the right approach or the right prompt—to get helpful guidance from ChatGPT to complete it.
+
+# License
 
    This project is licensed under the MIT License - see the LICENSE file for details.
 
-
-Acknowledgements
-   - Satellite texture is represented using a custom icon under the icons directory.
-   - Earth texture (textures/earthmap1k.jpg) is used for realistic Earth visualization.
-
-
-Contributing
+# Contributing
     Contributions are welcome! Please feel free to submit a Pull Request or open an issue to discuss changes.
