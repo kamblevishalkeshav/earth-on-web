@@ -13,8 +13,8 @@ The next project is a Three.js-based simulation that visualizes Earth with orbit
 # Constellation Examples
 Below are visualizations of OneWeb and Starlink satellite constellations:  
 
-![Earth with Satellite Simulation](images/openbexi_earth_orbit_ONEWEB.png)
-![Earth with Satellite Simulation](images/openbexi_earth_orbit_STARLINK.png)
+![Earth with Satellite Simulation](images/openbexi_earth_orbit_ONEWEB.PNG)
+![Earth with Satellite Simulation](images/openbexi_earth_orbit_STARLINK.PNG)
 
 ## Features
 
