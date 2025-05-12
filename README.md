@@ -10,10 +10,11 @@ This project uses Three.js and dat.GUI to simulate Earth with orbiting satellite
 # Three.js Earth with Random Satellite Simulation
 The next project is a Three.js-based simulation that visualizes Earth with orbiting satellites. The simulation includes three types of satellite orbits: Low Earth Orbit (LEO), Medium Earth Orbit (MEO), and Geostationary Orbit (GEO). Users can interactively adjust the number of satellites in each orbit, as well as modify camera settings like Field of View (FOV) and Zoom.
 
-The project leverages `dat.GUI` for an intuitive interface to control simulation parameters in real-time. The satellites are represented using sprite images (`ob_satellite.png`), which provide a realistic appearance and improved rendering performance.
+# Constellation Examples
+Below are visualizations of OneWeb and Starlink satellite constellations:  
 
-![Earth with Satellite Simulation](images/openbexi_earth_orbit_ex1.png)
-![Earth with Satellite Simulation](images/openbexi_earth_orbit_ex2.png)
+![Earth with Satellite Simulation](images/openbexi_earth_orbit_ONEWEB.png)
+![Earth with Satellite Simulation](images/openbexi_earth_orbit_STARLINK.png)
 
 ## Features
 
@@ -33,7 +34,7 @@ License
 
 Acknowledgements
    - Satellite texture is represented using a custom icon under the icons directory.
-   - Earth texture (1_earth_16k.jpg) is used for realistic Earth visualization.
+   - Earth texture (textures/earthmap1k.jpg) is used for realistic Earth visualization.
 
 
 Contributing
