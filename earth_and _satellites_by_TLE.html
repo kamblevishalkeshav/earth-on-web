@@ -160,6 +160,7 @@
         });
         earthMesh = new THREE.Mesh(earthGeom, earthMat);
         scene.add(earthMesh);
+        earthMesh.rotation.x = Math.PI / 2;
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = controlsConfig.enableDamping;
