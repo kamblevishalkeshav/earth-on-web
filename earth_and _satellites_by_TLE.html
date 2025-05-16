@@ -160,7 +160,6 @@
         });
         earthMesh = new THREE.Mesh(earthGeom, earthMat);
         scene.add(earthMesh);
-        earthMesh.rotation.x = Math.PI / 2;
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = controlsConfig.enableDamping;
@@ -497,7 +496,7 @@
 
             const ecf = satellite.eciToEcf(posVel.position, gmstNow);
             const kmToScene = 10/6371;
-            sat.mesh.position.set(ecf.x*kmToScene, ecf.y*kmToScene, ecf.z*kmToScene);
+            sat.mesh.position.set(ecf.x*kmToScene, ecf.z*kmToScene, ecf.y*kmToScene);
 
         });
 
