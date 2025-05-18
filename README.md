@@ -8,14 +8,15 @@ This project uses Three.js and dat.GUI to simulate Earth with orbiting satellite
 
 
 # Three.js Earth with Random Satellite Simulation
-The next project is a Three.js-based simulation that visualizes Earth with orbiting satellites. The simulation includes three types of satellite orbits: Low Earth Orbit (LEO), Medium Earth Orbit (MEO), and Geostationary Orbit (GEO). Users can interactively adjust the number of satellites in each orbit, as well as modify camera settings like Field of View (FOV) and Zoom.
+The  project is a Three.js-based simulation that visualizes Earth with orbiting satellites. The simulation includes three types of satellite orbits: Low Earth Orbit (LEO), Medium Earth Orbit (MEO), and Geostationary Orbit (GEO). Users can interactively adjust the number of satellites in each orbit, as well as modify camera settings like Field of View (FOV) and Zoom.
 
-The project leverages `dat.GUI` for an intuitive interface to control simulation parameters in real-time. The satellites are represented using sprite images (`ob_satellite.png`), which provide a realistic appearance and improved rendering performance.
+# Constellation Examples
+Below are visualizations of OneWeb and Starlink satellite constellations:  
 
-![Earth with Satellite Simulation](images/openbexi_earth_orbit_ex1.png)
-![Earth with Satellite Simulation](images/openbexi_earth_orbit_ex2.png)
+![Earth with Satellite Simulation](images/openbexi_earth_orbit_ONEWEB.PNG)
+![Earth with Satellite Simulation](images/openbexi_earth_orbit_STARLINK.PNG)
 
-## Features
+# Features
 
 - 3D Earth model rendered using Three.js.
 - Visualization of three types of satellite orbits: Low Earth Orbit (LEO), Medium Earth Orbit (MEO), and Geostationary Orbit (GEO).
@@ -26,15 +27,12 @@ The project leverages `dat.GUI` for an intuitive interface to control simulation
 - Satellites are displayed as sprites for better performance and realistic visualization.
 - Adjustable inclination and rotation effects for LEO and MEO satellites.
 
-License
+# Roadmap
+The Mercator view is still a work in progress. I haven’t yet found the right approach or the right prompt—to get helpful guidance from ChatGPT to complete it. I'm currently using the O3 version with deep thinking enabled.
+
+# License
 
    This project is licensed under the MIT License - see the LICENSE file for details.
 
-
-Acknowledgements
-   - Satellite texture is represented using a custom icon under the icons directory.
-   - Earth texture (1_earth_16k.jpg) is used for realistic Earth visualization.
-
-
-Contributing
+# Contributing
     Contributions are welcome! Please feel free to submit a Pull Request or open an issue to discuss changes.

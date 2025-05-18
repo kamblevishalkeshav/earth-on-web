@@ -50,7 +50,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dat.gui/build/dat.gui.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/satellite.js/dist/satellite.min.js"></script>
+<script src="https://unpkg.com/satellite.js@4.0.0/dist/satellite.min.js"></script>
 
 <script>
     /**************************************************************
@@ -254,6 +254,7 @@
      * CREATE GUI
      **************************************************************/
     function createGUI() {
+
         gui = new dat.GUI({ name: "Controls" });
         gui.domElement.style.backgroundColor = "#2a2a2a";
         gui.domElement.style.padding = "10px";
@@ -417,46 +418,59 @@
         if (visibilityCone) { scene.remove(visibilityCone); visibilityCone=null; }
     }
 
+
     /**************************************************************
      * ORBIT (we keep coverage/visibility code out of the GUI)
      **************************************************************/
-    function updateOrbitTrajectory(satellite) {
+    function updateOrbitTrajectory(satData) {
+        // 1) Clear any existing orbit lines
         removeAllGeometry();
+
+        // 2) Check if we even want to show orbits
         if (!guiParams.showOrbit) return;
 
-        const now = new Date();
-        const meanMotion = satellite.satrec.no; // revs/min
-        const periodMins = 1440 / meanMotion;
-        const segments = 128;
-        const step = periodMins / segments;
+        // 3) Calculate orbital period in minutes
+        //    'no' is revs per day, so period in days is 1 / no,
+        //    and period in minutes is (1 / no) * 1440
+        const meanMotion = satData.satrec.no; // rev/day from TLE
+        const periodMins = 1440 / meanMotion; // orbital period in minutes
+
+        // 4) Decide how many segments we want for the orbit line
+        const segments = 14400; // more segments => smoother curve
+        const step = periodMins / segments; // minutes between samples
+
+        // 5) Build an array of orbit points in ECI
         const orbitPoints = [];
+        const now = new Date();
 
-        for (let i=0; i<=segments; i++) {
-            const future = new Date(now.getTime() + i*step*60000);
-            // If your version lacks .propagate, use .sgp4
-            const posVel = satellite.propagate(satellite.satrec, future);
-            if (!posVel.position) continue;
+        for (let i = 0; i <= segments; i++) {
+            // Each point is 'step' minutes later
+            const future = new Date(now.getTime() + i * step * 60_000);
 
-            const jday = satellite.jday(
-                future.getUTCFullYear(),
-                future.getUTCMonth()+1,
-                future.getUTCDate(),
-                future.getUTCHours(),
-                future.getUTCMinutes(),
-                future.getUTCSeconds()
-            );
-            const gmst = satellite.gstime(jday);
+            // Propagate satellite to that time in ECI
+            const posVel = satellite.propagate(satData.satrec, future);
+            if (!posVel.position) continue; // skip if we fail to propagate
 
-            const ecf = satellite.eciToEcf(posVel.position, gmst);
+            // ECI coordinates in kilometers
+            const { x, y, z } = posVel.position;
+
+            // Scale from km to your Three.js scene units
+            // e.g., Earth radius ~6371 km. You can adjust as needed.
             const kmToScene = 10 / 6371;
-            orbitPoints.push(new THREE.Vector3(ecf.x*kmToScene, ecf.y*kmToScene, ecf.z*kmToScene));
+            orbitPoints.push(new THREE.Vector3(x * kmToScene, y * kmToScene, z * kmToScene));
         }
 
+        // 6) Create a Three.js line from those points
+        //    Using LineLoop will "close" the loop from last point to first
         const geometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
         const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
-        orbitLine = new THREE.LineLoop(geometry, material);
+        orbitLine = new THREE.Line(geometry, material);
+
+        // 7) Add the orbit line to your scene
         scene.add(orbitLine);
     }
+
+
 
     /**************************************************************
      * ANIMATION LOOP
@@ -482,7 +496,8 @@
 
             const ecf = satellite.eciToEcf(posVel.position, gmstNow);
             const kmToScene = 10/6371;
-            sat.mesh.position.set(ecf.x*kmToScene, ecf.y*kmToScene, ecf.z*kmToScene);
+            sat.mesh.position.set(ecf.x*kmToScene, ecf.z*kmToScene, ecf.y*kmToScene);
+
         });
 
         if (guiParams.view3D) {
@@ -588,6 +603,20 @@
         const start=new Date(d.getFullYear(),0,0);
         const diff=d-start+(start.getTimezoneOffset()-d.getTimezoneOffset())*60000;
         return Math.floor(diff/(1000*60*60*24));
+    }
+
+    function createSatellite3D(sat, textureUrl) {
+        const textureLoader = new THREE.TextureLoader();
+        const cubeGeometry = new THREE.BoxGeometry(1, 1, 0);
+        const cubeMaterial = new THREE.MeshStandardMaterial({
+            map: textureLoader.load(textureUrl),
+            // If your texture has an alpha channel (PNG), allow transparency:
+            transparent: true,
+            alphaTest: 0.5, // optionally cut off fully/partly transparent pixels
+        });
+        const cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
+
+        return cubeMesh;
     }
 
     /**************************************************************

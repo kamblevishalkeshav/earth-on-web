@@ -1,4 +1,4 @@
-package com.openbexi.timeline.data_browser;
+package com.openbexi.satellites;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -22,7 +22,7 @@ public class SatelliteDataExporter {
     public static void main(String[] args) {
         try {
             // STEP 1: Extract launch dates from n2yo pages (if not already done)
-            File launchDatesFile = new File("json/tle/satellite_launch_dates.json");
+            File launchDatesFile = new File("json/TLE/satellite_launch_dates.json");
             if (!launchDatesFile.exists()) {
                 System.out.println("Extracting launch dates from n2yo...");
                 extractLaunchDates();
