@@ -12,6 +12,7 @@
             background-color: #000;
             color: #fff;
         }
+
         canvas {
             display: block;
         }
@@ -20,7 +21,7 @@
             position: fixed;
             top: 10px;
             left: 10px;
-            z-index: 1001; /* Above controls container */
+            z-index: 1001;
             background-color: rgba(50, 50, 50, 0.8);
             color: white;
             border: 1px solid #666;
@@ -33,28 +34,42 @@
         }
 
         #controlsContainer {
-            position: fixed; /* Changed from absolute for easier transform management */
+            position: fixed;
             top: 10px;
-            left: 10px; /* Initial position, will be transformed out */
+            left: 10px;
             background-color: rgba(40, 40, 40, 0.9);
             padding: 15px;
-            padding-top: 50px; /* Space for the toggle button if it were inside, or just top margin */
             border-radius: 8px;
             width: 280px;
             max-height: calc(100vh - 20px);
             overflow-y: auto;
             z-index: 1000;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
             transition: transform 0.3s ease-in-out;
-            transform: translateX(0%); /* Initially visible */
-        }
-        #controlsContainer.menu-hidden {
-            transform: translateX(calc(-100% - 20px)); /* Slide out completely */
+            transform: translateX(0%);
         }
 
-        /* Adjust menu toggle button position when menu is visible for a cleaner look */
-        /* This part is tricky if the button is truly separate. Let's keep the button fixed and independent. */
-        /* If the menu is visible, the toggle button is on top of it or next to it. */
+        #controlsContainer.menu-hidden {
+            transform: translateX(calc(-100% - 20px));
+        }
+
+        #versionDisplay {
+            color: #888;
+            font-size: 12px;
+            text-align: center;
+            padding: 5px 0 10px 0;
+            border-bottom: 1px solid #555;
+            margin-bottom: 10px;
+        }
+
+        #versionDisplay a {
+            color: #00aaff; /* Link color to match other UI elements */
+            text-decoration: none;
+        }
+
+        #versionDisplay a:hover {
+            text-decoration: underline;
+        }
 
 
         .control-group {
@@ -62,11 +77,13 @@
             padding-bottom: 10px;
             border-bottom: 1px solid #555;
         }
+
         .control-group:last-child {
             border-bottom: none;
             margin-bottom: 0;
             padding-bottom: 0;
         }
+
         #controlsContainer h3 {
             color: #00aaff;
             margin-top: 0;
@@ -77,19 +94,23 @@
             justify-content: space-between;
             align-items: center;
         }
+
         #controlsContainer h3 .toggle-icon {
             font-size: 12px;
             margin-left: 8px;
             transition: transform 0.2s ease-in-out;
         }
+
         #controlsContainer h3 .toggle-icon.collapsed {
             transform: rotate(-90deg);
         }
+
         .collapsible-content {
             max-height: 500px;
             overflow: hidden;
             transition: max-height 0.3s ease-in-out;
         }
+
         .collapsible-content.collapsed {
             max-height: 0;
             padding-top: 0;
@@ -104,10 +125,12 @@
             font-size: 13px;
             color: #ccc;
         }
+
         #controlsContainer select,
         #controlsContainer input[type="checkbox"] {
             margin-bottom: 10px;
         }
+
         #controlsContainer select {
             width: 100%;
             padding: 8px;
@@ -117,10 +140,12 @@
             color: #fff;
             font-size: 13px;
         }
+
         #controlsContainer input[type="checkbox"] {
             margin-right: 5px;
             vertical-align: middle;
         }
+
         #controlsContainer .checkbox-label {
             display: inline-block;
             vertical-align: middle;
@@ -141,6 +166,7 @@
             max-height: 200px;
             overflow-y: auto;
         }
+
         #satelliteCountDisplay {
             font-size: 13px;
             color: #00aaff;
@@ -153,12 +179,13 @@
             display: none;
             pointer-events: none;
             border: 1px solid #555;
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
             top: 10px;
             right: 10px;
             width: 400px;
             height: 200px;
         }
+
         #mercatorContainer.fullscreen {
             top: 0;
             left: 0;
@@ -169,6 +196,7 @@
             box-shadow: none;
             z-index: 900;
         }
+
         .mapBackground {
             position: relative;
             width: 100%;
@@ -176,16 +204,20 @@
             background: url(textures/earthmap1k.jpg) no-repeat;
             background-size: 100% 100%;
         }
+
         #mercatorCanvas {
             position: absolute;
-            top: 0; left: 0;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
         }
+
         .mapBackground.fallback {
             background: #555 url('https://placehold.co/400x200/3333cc/ffffff?text=Map+Texture+Error') no-repeat;
             background-size: 100% 100%;
         }
+
         #mercatorContainer.fullscreen .mapBackground.fallback {
             background: #555 url('https://placehold.co/1920x1080/3333cc/ffffff?text=Map+Texture+Error+Fullscreen') no-repeat;
             background-size: 100% 100%;
@@ -202,7 +234,9 @@
     </script>
 </head>
 <body>
-<button id="menuToggleBtn">✕</button> <div id="controlsContainer">
+<button id="menuToggleBtn">✕</button>
+<div id="controlsContainer">
+    <div id="versionDisplay"></div>
     <div class="control-group">
         <h3 data-collapsible-target="filtersContent">Filters <span class="toggle-icon">▾</span></h3>
         <div id="filtersContent" class="collapsible-content">
@@ -231,6 +265,9 @@
             <br>
             <input type="checkbox" id="viewMercatorToggle">
             <label for="viewMercatorToggle" class="checkbox-label">2D Mercator</label>
+            <br>
+            <input type="checkbox" id="highDefToggle">
+            <label for="highDefToggle" class="checkbox-label">High Definition</label>
         </div>
     </div>
 
@@ -264,7 +301,13 @@
 
 <script type="module">
     import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+    // Version Constant (only the number now)
+    const versionNumber = "1.0";
+    const versionRepoUrl = "https://github.com/arcazj/openbexi_earth_orbit";
+    const versionText = `version ${versionNumber} - hosted at`;
+
 
     // GLOBALS
     let scene, camera, renderer, earthMesh, controls;
@@ -274,6 +317,7 @@
     let satellites = [];
     let orbitLine = null;
     let currentSelectedSatellite = null;
+    let textureLoader;
 
     // Parameters object
     const simParams = {
@@ -282,15 +326,16 @@
         selectedSatellite: "None",
         showOrbit: false,
         view3D: true,
-        viewMercator: false
+        viewMercator: false,
+        useHighDefTexture: false
     };
 
     // HTML Element References
     let orbitTypeFilterSelect, companyFilterSelect, satelliteCountDisplay;
-    let view3DToggle, viewMercatorToggle, showOrbitToggle;
+    let view3DToggle, viewMercatorToggle, showOrbitToggle, highDefToggleElement;
     let satelliteSelectDropdown, satelliteInfoDiv;
     let mercatorContainer, mercatorCanvasElement, mapBackgroundDiv;
-    let controlsContainerElement, menuToggleBtnElement; // Added for menu toggle
+    let controlsContainerElement, menuToggleBtnElement, versionDisplayElement;
 
 
     // UTILITY: fetchJSON
@@ -322,29 +367,66 @@
                 fetchJSON('config/satellite.json'), fetchJSON('config/scene.json'),
                 fetchJSON('config/controls.json')
             ]);
-            earthConfig = earthConfig || { diameter: 12742, texture: 'textures/earthmap1k.jpg', textureLight: 'textures/earthmap1k_light.jpg' };
-            satelliteConfig = satelliteConfig || { icon: 'textures/satellite_icon.png', scale: [0.1, 0.1, 0.1] };
-            sceneConfig = sceneConfig || { camera: { fov: 45, near: 0.1, far: 1000, position: [0,0,30] }, ambientLight: {color: 0xffffff, intensity: 0.5}, directionalLight: {color: 0xffffff, intensity: 1, position: [5,3,5]}};
-            controlsConfig = controlsConfig || { enableDamping: true, dampingFactor: 0.05};
+            earthConfig = earthConfig || {};
+            earthConfig.diameter = earthConfig.diameter || 12742;
+            earthConfig.texture = earthConfig.texture || 'textures/1_earth_16k.jpg';
+            earthConfig.textureLight = earthConfig.textureLight || 'textures/earthmap1k_light.jpg';
+
+            satelliteConfig = satelliteConfig || {icon: 'textures/satellite_icon.png', scale: [0.1, 0.1, 0.1]};
+            sceneConfig = sceneConfig || {
+                camera: {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]},
+                ambientLight: {color: 0xffffff, intensity: 0.5},
+                directionalLight: {color: 0xffffff, intensity: 1, position: [5, 3, 5]}
+            };
+            controlsConfig = controlsConfig || {enableDamping: true, dampingFactor: 0.05};
             globalScale = (earthConfig.diameter / 2) / 10;
         } catch (error) {
             console.error("Failed to load configurations:", error);
-            // Fallback defaults
-            earthConfig = { diameter: 12742, texture: 'https://placehold.co/1024x512/0000ff/ffffff?text=Earth+Texture', textureLight: 'https://placehold.co/1024x512/0000dd/ffffff?text=Earth+Light' };
-            satelliteConfig = { icon: 'https://placehold.co/32x32/ff0000/ffffff?text=Sat', scale: [0.1, 0.1, 0.1] };
-            sceneConfig = { camera: { fov: 45, near: 0.1, far: 1000, position: [0,0,30] }, ambientLight: {color: 0xffffff, intensity: 0.5}, directionalLight: {color: 0xffffff, intensity: 1, position: [5,3,5]}};
-            controlsConfig = { enableDamping: true, dampingFactor: 0.05};
+            earthConfig = {
+                diameter: 12742,
+                texture: 'https://placehold.co/4096x2048/000099/ffffff?text=Earth+HD+Error',
+                textureLight: 'https://placehold.co/1024x512/0000ff/ffffff?text=Earth+SD+Error'
+            };
+            satelliteConfig = {icon: 'https://placehold.co/32x32/ff0000/ffffff?text=Sat', scale: [0.1, 0.1, 0.1]};
+            sceneConfig = {
+                camera: {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]},
+                ambientLight: {color: 0xffffff, intensity: 0.5},
+                directionalLight: {color: 0xffffff, intensity: 1, position: [5, 3, 5]}
+            };
+            controlsConfig = {enableDamping: true, dampingFactor: 0.05};
             globalScale = (earthConfig.diameter / 2) / 10;
             alert("Error loading configurations. Using default settings.");
         }
     }
+
+    // FUNCTION TO UPDATE EARTH TEXTURE
+    function updateEarthTexture() {
+        if (!earthMesh || !textureLoader || !earthConfig) return;
+
+        const textureUrl = simParams.useHighDefTexture ? earthConfig.texture : earthConfig.textureLight;
+        console.log("Loading Earth texture:", textureUrl);
+
+        textureLoader.load(textureUrl, (texture) => {
+            earthMesh.material.map = texture;
+            earthMesh.material.needsUpdate = true;
+            console.log("Earth texture updated to:", textureUrl);
+        }, undefined, (err) => {
+            console.error('Error loading Earth texture:', textureUrl, err, '. Using fallback.');
+            const fallbackTextureUrl = simParams.useHighDefTexture ? 'https://placehold.co/4096x2048/111155/ffffff?text=HD+Load+Error' : 'https://placehold.co/1024x512/222266/ffffff?text=SD+Load+Error';
+            textureLoader.load(fallbackTextureUrl, (fallbackMap) => {
+                earthMesh.material.map = fallbackMap;
+                earthMesh.material.needsUpdate = true;
+            });
+        });
+    }
+
 
     // INIT 3D SCENE
     function init3D() {
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(sceneConfig.camera.fov, window.innerWidth / window.innerHeight, sceneConfig.camera.near, sceneConfig.camera.far);
         camera.position.set(...sceneConfig.camera.position);
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
@@ -353,18 +435,12 @@
         dirLight.position.set(...sceneConfig.directionalLight.position);
         scene.add(dirLight);
 
-        const textureLoader = new THREE.TextureLoader();
-        const textureUrl = isMobileDevice() ? earthConfig.textureLight : earthConfig.texture;
+        textureLoader = new THREE.TextureLoader();
         const earthMat = new THREE.MeshPhongMaterial();
-        textureLoader.load(textureUrl, (texture) => {
-            earthMat.map = texture; earthMat.needsUpdate = true;
-        }, undefined, (err) => {
-            console.error('Error loading Earth texture:', err, '. Using fallback.');
-            earthMat.map = textureLoader.load('https://placehold.co/1024x512/0000ff/ffffff?text=Earth+Texture+Error');
-            earthMat.needsUpdate = true;
-        });
         earthMesh = new THREE.Mesh(new THREE.SphereGeometry(10, 64, 64), earthMat);
         scene.add(earthMesh);
+
+        updateEarthTexture();
 
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = controlsConfig.enableDamping;
@@ -386,8 +462,14 @@
         const primaryMapTextureUrl = 'textures/earthmap1k.jpg';
         const img = new Image();
         img.src = primaryMapTextureUrl;
-        img.onload = () => { mapBackgroundDiv.classList.remove('fallback'); console.log("Mercator map texture loaded."); };
-        img.onerror = () => { console.warn(`Mercator map texture '${primaryMapTextureUrl}' failed. Fallback applied.`); mapBackgroundDiv.classList.add('fallback'); };
+        img.onload = () => {
+            mapBackgroundDiv.classList.remove('fallback');
+            console.log("Mercator map texture loaded.");
+        };
+        img.onerror = () => {
+            console.warn(`Mercator map texture '${primaryMapTextureUrl}' failed. Fallback applied.`);
+            mapBackgroundDiv.classList.add('fallback');
+        };
     }
 
     // SETUP TLE SATELLITES
@@ -396,81 +478,134 @@
             let tleData = await fetchJSON(jsonFilePath);
             if ((!Array.isArray(tleData) || tleData.length === 0) && jsonFilePath === 'json/tle/TLE.json') {
                 const backupTleData = await fetchJSON('json/tle/TLE_backup.json');
-                if (backupTleData && backupTleData.length > 0) { tleData = backupTleData; alert("Primary TLE failed. Loaded backup."); }
-                else { console.error("All TLE data sources failed."); alert("Critical Error: No satellite data."); return; }
+                if (backupTleData && backupTleData.length > 0) {
+                    tleData = backupTleData;
+                    alert("Primary TLE failed. Loaded backup.");
+                } else {
+                    console.error("All TLE data sources failed.");
+                    alert("Critical Error: No satellite data.");
+                    return;
+                }
             }
-            const textureLoader = new THREE.TextureLoader();
+            const satTextureLoader = new THREE.TextureLoader();
             const satIconUrl = satelliteConfig.icon || 'https://placehold.co/32x32/ff0000/ffffff?text=S_Icon';
             const baseMaterial = new THREE.SpriteMaterial({
-                map: textureLoader.load(satIconUrl, undefined, () => {}, (err) => { // Added empty success callback
+                map: satTextureLoader.load(satIconUrl, undefined, () => {
+                }, (err) => {
                     console.error('Error loading satellite icon:', err, '. Using fallback.');
-                    baseMaterial.map = textureLoader.load('https://placehold.co/32x32/ff0000/ffffff?text=S');
+                    baseMaterial.map = satTextureLoader.load('https://placehold.co/32x32/ff0000/ffffff?text=S');
                     baseMaterial.needsUpdate = true;
                 })
             });
-            satellites.forEach(s => scene.remove(s.mesh)); satellites.length = 0;
+            satellites.forEach(s => scene.remove(s.mesh));
+            satellites.length = 0;
             tleData.forEach(item => {
-                const { company, satellite_name, norad_id, type, launch_date, tle_line1, tle_line2 } = item;
-                if (!tle_line1 || !tle_line2) { console.warn(`Skipping ${satellite_name || norad_id}: missing TLE.`); return; }
+                const {company, satellite_name, norad_id, type, launch_date, tle_line1, tle_line2} = item;
+                if (!tle_line1 || !tle_line2) {
+                    console.warn(`Skipping ${satellite_name || norad_id}: missing TLE.`);
+                    return;
+                }
                 try {
                     const satrec = satellite.twoline2satrec(tle_line1, tle_line2);
                     if (!satrec) throw new Error("Failed to parse TLE.");
                     const sprite = new THREE.Sprite(baseMaterial.clone());
                     sprite.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]));
                     scene.add(sprite);
-                    satellites.push({ mesh: sprite, satrec, orbitType: type || "N/A", company: company || "N/A", satellite_name: satellite_name || `NORAD ${norad_id}`, norad_id, launch_date, tle_line1, tle_line2 });
-                } catch (e) { console.error(`Error processing TLE for ${satellite_name || norad_id}: ${e.message}.`); }
+                    satellites.push({
+                        mesh: sprite,
+                        satrec,
+                        orbitType: type || "N/A",
+                        company: company || "N/A",
+                        satellite_name: satellite_name || `NORAD ${norad_id}`,
+                        norad_id,
+                        launch_date,
+                        tle_line1,
+                        tle_line2
+                    });
+                } catch (e) {
+                    console.error(`Error processing TLE for ${satellite_name || norad_id}: ${e.message}.`);
+                }
             });
-        } catch(err) { console.error("Error in setupTLESatellites:", err); alert("Error setting up satellite data."); }
+        } catch (err) {
+            console.error("Error in setupTLESatellites:", err);
+            alert("Error setting up satellite data.");
+        }
     }
 
-    // SETUP HTML CONTROLS (including menu toggle)
+    // SETUP HTML CONTROLS
     function setupHTMLControls() {
         controlsContainerElement = document.getElementById('controlsContainer');
         menuToggleBtnElement = document.getElementById('menuToggleBtn');
+        versionDisplayElement = document.getElementById('versionDisplay');
+
+        // Setup version display with link
+        if (versionDisplayElement) {
+            const versionLink = document.createElement('a');
+            versionLink.href = versionRepoUrl;
+            versionLink.textContent = `GitHub Repo`;
+            versionLink.target = "_blank"; // Open in new tab
+            versionDisplayElement.textContent = `${versionText} `; // Add space before link
+            versionDisplayElement.appendChild(versionLink);
+        }
+
 
         orbitTypeFilterSelect = document.getElementById('orbitTypeFilter');
         companyFilterSelect = document.getElementById('companyFilter');
         satelliteCountDisplay = document.getElementById('satelliteCountDisplay');
         view3DToggle = document.getElementById('view3DToggle');
         viewMercatorToggle = document.getElementById('viewMercatorToggle');
+        highDefToggleElement = document.getElementById('highDefToggle');
         showOrbitToggle = document.getElementById('showOrbitToggle');
         satelliteSelectDropdown = document.getElementById('satelliteSelect');
         satelliteInfoDiv = document.getElementById('satelliteInfo');
 
-        // Set initial values from simParams
         orbitTypeFilterSelect.value = simParams.orbitTypeFilter;
         view3DToggle.checked = simParams.view3D;
         viewMercatorToggle.checked = simParams.viewMercator;
+        if (highDefToggleElement) highDefToggleElement.checked = simParams.useHighDefTexture;
         showOrbitToggle.checked = simParams.showOrbit;
 
-        // Populate company filter
         let companies = Array.from(new Set(satellites.map(s => s.company))).sort();
         companyFilterSelect.innerHTML = '<option value="ALL COMPANY">ALL COMPANY</option>';
         companies.forEach(comp => {
             const option = document.createElement('option');
-            option.value = comp; option.textContent = comp;
+            option.value = comp;
+            option.textContent = comp;
             companyFilterSelect.appendChild(option);
         });
         companyFilterSelect.value = simParams.companyFilter;
 
-        // Event Listeners for controls
         orbitTypeFilterSelect.addEventListener('change', (e) => {
             simParams.orbitTypeFilter = e.target.value;
-            simParams.showOrbit = false; showOrbitToggle.checked = false;
-            removeAllGeometry(); updateSatelliteList();
+            simParams.showOrbit = false;
+            showOrbitToggle.checked = false;
+            removeAllGeometry();
+            updateSatelliteList();
         });
         companyFilterSelect.addEventListener('change', (e) => {
             simParams.companyFilter = e.target.value;
-            simParams.showOrbit = false; showOrbitToggle.checked = false;
-            removeAllGeometry(); updateSatelliteList();
+            simParams.showOrbit = false;
+            showOrbitToggle.checked = false;
+            removeAllGeometry();
+            updateSatelliteList();
         });
         view3DToggle.addEventListener('change', (e) => simParams.view3D = e.target.checked);
         viewMercatorToggle.addEventListener('change', (e) => simParams.viewMercator = e.target.checked);
+
+        if (highDefToggleElement) {
+            highDefToggleElement.addEventListener('change', (e) => {
+                simParams.useHighDefTexture = e.target.checked;
+                updateEarthTexture();
+            });
+        }
+
         showOrbitToggle.addEventListener('change', (e) => {
             simParams.showOrbit = e.target.checked;
             if (currentSelectedSatellite) updateOrbitTrajectory(currentSelectedSatellite);
-            else if (simParams.showOrbit) { simParams.showOrbit = false; e.target.checked = false; }
+            else if (simParams.showOrbit) {
+                simParams.showOrbit = false;
+                e.target.checked = false;
+            }
         });
         satelliteSelectDropdown.addEventListener('change', (e) => {
             simParams.selectedSatellite = e.target.value;
@@ -478,31 +613,27 @@
             selectSatellite(sat || null);
         });
 
-        // Collapsible sections logic
         document.querySelectorAll('#controlsContainer h3[data-collapsible-target]').forEach(header => {
             const targetId = header.dataset.collapsibleTarget;
             const targetContent = document.getElementById(targetId);
             const icon = header.querySelector('.toggle-icon');
             if (targetContent && icon) {
-                targetContent.classList.remove('collapsed'); icon.classList.remove('collapsed'); icon.textContent = '▾';
+                targetContent.classList.remove('collapsed');
+                icon.classList.remove('collapsed');
+                icon.textContent = '▾';
                 header.addEventListener('click', () => {
-                    targetContent.classList.toggle('collapsed'); icon.classList.toggle('collapsed');
+                    targetContent.classList.toggle('collapsed');
+                    icon.classList.toggle('collapsed');
                     icon.textContent = targetContent.classList.contains('collapsed') ? '▸' : '▾';
                 });
             }
         });
 
-        // Menu Toggle Button Logic
         if (menuToggleBtnElement && controlsContainerElement) {
             menuToggleBtnElement.addEventListener('click', () => {
                 controlsContainerElement.classList.toggle('menu-hidden');
-                if (controlsContainerElement.classList.contains('menu-hidden')) {
-                    menuToggleBtnElement.innerHTML = '☰'; // Show hamburger when menu is hidden
-                } else {
-                    menuToggleBtnElement.innerHTML = '✕'; // Show X when menu is visible
-                }
+                menuToggleBtnElement.innerHTML = controlsContainerElement.classList.contains('menu-hidden') ? '☰' : '✕';
             });
-            // Initial state based on class (menu is visible by default, so X)
             menuToggleBtnElement.innerHTML = controlsContainerElement.classList.contains('menu-hidden') ? '☰' : '✕';
         }
     }
@@ -518,22 +649,25 @@
             s.mesh.visible = isVisible;
             if (isVisible) {
                 s.mesh.material.color.set(s.isSelected ? 0xff0000 : 0xffffff);
-                s.mesh.scale.set(...(s.isSelected ? (satelliteConfig.scale || [0.1,0.1,0.1]).map(v => v * 1.5) : (satelliteConfig.scale || [0.1,0.1,0.1])));
+                s.mesh.scale.set(...(s.isSelected ? (satelliteConfig.scale || [0.1, 0.1, 0.1]).map(v => v * 1.5) : (satelliteConfig.scale || [0.1, 0.1, 0.1])));
             }
         });
         if (currentSelectedSatellite && !filtered.includes(currentSelectedSatellite)) selectSatellite(null);
-        // Ensure satelliteCountDisplay exists before updating
-        if(satelliteCountDisplay) satelliteCountDisplay.textContent = filtered.length;
+        if (satelliteCountDisplay) satelliteCountDisplay.textContent = filtered.length;
 
         const currentDropdownValue = satelliteSelectDropdown.value;
         satelliteSelectDropdown.innerHTML = '<option value="None">None</option>';
         filtered.forEach(s => {
             const option = document.createElement('option');
-            option.value = s.satellite_name; option.textContent = s.satellite_name;
+            option.value = s.satellite_name;
+            option.textContent = s.satellite_name;
             satelliteSelectDropdown.appendChild(option);
         });
         if (filtered.some(s => s.satellite_name === currentDropdownValue)) satelliteSelectDropdown.value = currentDropdownValue;
-        else { satelliteSelectDropdown.value = "None"; if (simParams.selectedSatellite !== "None") selectSatellite(null); }
+        else {
+            satelliteSelectDropdown.value = "None";
+            if (simParams.selectedSatellite !== "None") selectSatellite(null);
+        }
         if (satelliteSelectDropdown.value === "None" && currentSelectedSatellite) selectSatellite(null);
     }
 
@@ -543,7 +677,7 @@
             currentSelectedSatellite.isSelected = false;
             if (currentSelectedSatellite.mesh.visible) {
                 currentSelectedSatellite.mesh.material.color.set(0xffffff);
-                currentSelectedSatellite.mesh.scale.set(...(satelliteConfig.scale || [0.1,0.1,0.1]));
+                currentSelectedSatellite.mesh.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]));
             }
         }
         currentSelectedSatellite = sat;
@@ -551,7 +685,7 @@
             sat.isSelected = true;
             if (sat.mesh.visible) {
                 sat.mesh.material.color.set(0xff0000);
-                sat.mesh.scale.set(...(satelliteConfig.scale || [0.1,0.1,0.1]).map(v => v * 1.5));
+                sat.mesh.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]).map(v => v * 3.5));
             }
             simParams.selectedSatellite = sat.satellite_name;
             satelliteSelectDropdown.value = sat.satellite_name;
@@ -567,7 +701,10 @@
     // UPDATE SATELLITE INFO PANEL
     function updateSatelliteInfo(sat) {
         if (!satelliteInfoDiv) return;
-        if (!sat) { satelliteInfoDiv.innerHTML = `<div style="font-weight:bold;">No satellite selected</div>`; return; }
+        if (!sat) {
+            satelliteInfoDiv.innerHTML = `<div style="font-weight:bold;">No satellite selected</div>`;
+            return;
+        }
         satelliteInfoDiv.innerHTML = `
     <div style="font-weight:bold; margin-bottom:3px; color: #00aaff;">Selected: ${sat.satellite_name}</div>
     <div>Company: ${sat.company}</div><div>Type: ${sat.orbitType}</div>
@@ -578,29 +715,44 @@
 
     // REMOVE GEOMETRY
     function removeAllGeometry() {
-        if (orbitLine) { scene.remove(orbitLine); orbitLine.geometry.dispose(); orbitLine.material.dispose(); orbitLine = null; }
+        if (orbitLine) {
+            scene.remove(orbitLine);
+            orbitLine.geometry.dispose();
+            orbitLine.material.dispose();
+            orbitLine = null;
+        }
     }
 
     // UPDATE ORBIT TRAJECTORY
     function updateOrbitTrajectory(satData) {
         removeAllGeometry();
         if (!simParams.showOrbit || !satData || !satData.satrec) return;
-        const meanMotion = satData.satrec.no; if (meanMotion === 0) { console.warn(`${satData.satellite_name} has zero mean motion.`); return; }
+        const meanMotion = satData.satrec.no;
+        if (meanMotion === 0) {
+            console.warn(`${satData.satellite_name} has zero mean motion.`);
+            return;
+        }
         const periodMins = 1440 / meanMotion;
-        const segments = 14400; const step = periodMins / segments;
-        const orbitPoints = []; const now = new Date();
+        const segments = 14400;
+        const step = periodMins / segments;
+        const orbitPoints = [];
+        const now = new Date();
         for (let i = 0; i <= segments; i++) {
             const future = new Date(now.getTime() + i * step * 60000);
             const posVel = satellite.propagate(satData.satrec, future);
             if (!posVel || !posVel.position) continue;
-            const { x, y, z } = posVel.position;
+            const {x, y, z} = posVel.position;
             const kmToScene = 10 / 6371;
-            orbitPoints.push(new THREE.Vector3(x * kmToScene, y * kmToScene, z * kmToScene));
+            orbitPoints.push(new THREE.Vector3(x * kmToScene, z * kmToScene, y * kmToScene));
         }
-        if (orbitPoints.length < 2) { console.warn(`Not enough points for orbit: ${orbitPoints.length}`); return; }
+        if (orbitPoints.length < 2) {
+            console.warn(`Not enough points for orbit: ${orbitPoints.length}`);
+            return;
+        }
         const geometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-        const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
-        orbitLine = new THREE.Line(geometry, material); scene.add(orbitLine);
+        const material = new THREE.LineBasicMaterial({color: 0xff0000});
+        orbitLine = new THREE.Line(geometry, material);
+        scene.add(orbitLine);
     }
 
     // ANIMATION LOOP
@@ -618,30 +770,31 @@
                 const ecf = satellite.eciToEcf(posVel.position, gmstNow);
                 const kmToScene = 10 / 6371;
                 sat.mesh.position.set(ecf.x * kmToScene, ecf.z * kmToScene, ecf.y * kmToScene);
-            } catch (e) { /* Silent error for propagation issues */ }
+            } catch (e) { /* Silent error for propagation issues */
+            }
         });
 
         const show3D = simParams.view3D;
         const showMercator = simParams.viewMercator;
 
         if (show3D && !showMercator) {
-            if(renderer) renderer.domElement.style.display = "block";
-            if(mercatorContainer) mercatorContainer.style.display = "none";
+            if (renderer) renderer.domElement.style.display = "block";
+            if (mercatorContainer) mercatorContainer.style.display = "none";
         } else if (!show3D && showMercator) {
-            if(renderer) renderer.domElement.style.display = "none";
-            if(mercatorContainer) {
+            if (renderer) renderer.domElement.style.display = "none";
+            if (mercatorContainer) {
                 mercatorContainer.style.display = "block";
                 mercatorContainer.classList.add("fullscreen");
             }
         } else if (show3D && showMercator) {
-            if(renderer) renderer.domElement.style.display = "block";
-            if(mercatorContainer) {
+            if (renderer) renderer.domElement.style.display = "block";
+            if (mercatorContainer) {
                 mercatorContainer.style.display = "block";
                 mercatorContainer.classList.remove("fullscreen");
             }
         } else {
-            if(renderer) renderer.domElement.style.display = "none";
-            if(mercatorContainer) mercatorContainer.style.display = "none";
+            if (renderer) renderer.domElement.style.display = "none";
+            if (mercatorContainer) mercatorContainer.style.display = "none";
         }
 
         if (showMercator && mercatorCanvasElement && mapBackgroundDiv) {
@@ -678,7 +831,8 @@
                 mercatorCtx.arc(pt.x, pt.y, sat.isSelected ? 5 : 3, 0, 2 * Math.PI);
                 mercatorCtx.fillStyle = sat.isSelected ? "rgba(255,0,0,0.9)" : "rgba(0,255,0,0.7)";
                 mercatorCtx.fill();
-            } catch (e) { /* Silent error */ }
+            } catch (e) { /* Silent error */
+            }
         });
     }
 
@@ -689,7 +843,7 @@
         const latRad = latDeg * Math.PI / 180;
         const mercN = Math.log(Math.tan((Math.PI / 4) + (latRad / 2)));
         const y = (currentHeight / 2) - (currentWidth * mercN / (2 * Math.PI));
-        return { x, y };
+        return {x, y};
     }
 
     // WINDOW RESIZE HANDLER
@@ -700,6 +854,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
     }
+
     window.addEventListener('resize', onWindowResize);
 
     // STARTUP FUNCTION
@@ -712,16 +867,20 @@
             if (satellites.length === 0) {
                 alert("Warning: No satellite data loaded. Check TLE files.");
             }
-            setupHTMLControls(); // This now also sets up the menu toggle
+            setupHTMLControls();
             updateSatelliteList();
             if (simParams.showOrbit && currentSelectedSatellite) updateOrbitTrajectory(currentSelectedSatellite);
-            else { simParams.showOrbit = false; if(showOrbitToggle) showOrbitToggle.checked = false; }
+            else {
+                simParams.showOrbit = false;
+                if (showOrbitToggle) showOrbitToggle.checked = false;
+            }
             animate();
-        } catch(e) {
+        } catch (e) {
             console.error("Critical error during initialization:", e);
-            document.body.innerHTML = `<div style="color:red; padding:20px; font-family:monospace;"><h1>Initialization Failed</h1><pre>${e.stack||e.message}</pre><p>Check console and config/TLE files.</p></div>`;
+            document.body.innerHTML = `<div style="color:red; padding:20px; font-family:monospace;"><h1>Initialization Failed</h1><pre>${e.stack || e.message}</pre><p>Check console and config/TLE files.</p></div>`;
         }
     }
+
     start();
 </script>
 </body>
