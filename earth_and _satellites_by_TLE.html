@@ -304,7 +304,7 @@
     import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 
     // Version Constant (only the number now)
-    const versionNumber = "1.0";
+    const versionNumber = "1.0d";
     const versionRepoUrl = "https://github.com/arcazj/openbexi_earth_orbit";
     const versionText = `version ${versionNumber} - hosted at`;
 
@@ -318,6 +318,14 @@
     let orbitLine = null;
     let currentSelectedSatellite = null;
     let textureLoader;
+
+    // Global variable for satellite icon image (Mercator)
+    let mercatorSatIcon = new Image();
+    mercatorSatIcon.src = satelliteConfig?.icon || 'icons/ob_satellite.png';
+    mercatorSatIcon.onerror = () => {
+        mercatorSatIcon.src = 'https://placehold.co/24x24/3333cc/ffffff?text=S';
+    };
+
 
     // Parameters object
     const simParams = {
@@ -811,6 +819,44 @@
         if (show3D && renderer && scene && camera) renderer.render(scene, camera);
     }
 
+    function drawDayNightTerminatorMercator(ctx, width, height) {
+        const now = new Date();
+        // Calculate subsolar longitude and latitude (declination)
+        const hoursUTC = now.getUTCHours() + now.getUTCMinutes() / 60;
+        const subSolarLon = (hoursUTC * 15) - 180; // -180 at midnight UTC, +180 at noon UTC
+        const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+        const decl = 23.44 * Math.sin((2 * Math.PI / 365) * (dayOfYear - 81)); // Subsolar latitude
+        const subSolarLat = decl;
+
+        // Draw the night overlay as a polygon following the terminator
+        ctx.save();
+        ctx.globalAlpha = 0.4;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(width, 0);
+        // Sample points across the longitude
+        const segments = 120;
+        for (let i = 0; i <= segments; i++) {
+            const frac = i / segments;
+            const lon = -180 + frac * 360;
+            // Approximate: latitude at night boundary at this longitude
+            // The night hemisphere is ~90° from the subsolar point
+            let lat = Math.asin(
+                -Math.cos((lon - subSolarLon) * Math.PI / 180) * Math.cos(subSolarLat * Math.PI / 180)
+            ) * 180 / Math.PI;
+            // Map to y in Mercator
+            const y = ((height / 2) - (width * Math.log(Math.tan((Math.PI / 4) + (lat * Math.PI / 360))) / (2 * Math.PI)));
+            const x = frac * width;
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+        ctx.fillStyle = "#000";
+        ctx.fill();
+        ctx.restore();
+    }
+
     // 2D MERCATOR MAP UPDATE
     function updateMercatorMap() {
         if (!mercatorCtx || !mercatorCanvasElement || mercatorContainer.style.display === 'none') return;
@@ -820,21 +866,80 @@
         const jdayNow = satellite.jday(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
         const gmstNow = satellite.gstime(jdayNow);
 
-        satellites.forEach(sat => {
-            if (!sat.mesh.visible || !sat.satrec) return;
-            try {
-                const posVel = satellite.propagate(sat.satrec, now);
-                if (!posVel || !posVel.position) return;
-                const geo = satellite.eciToGeodetic(posVel.position, gmstNow);
-                const pt = latLonToMercator(satellite.degreesLat(geo.latitude), satellite.degreesLong(geo.longitude));
-                mercatorCtx.beginPath();
-                mercatorCtx.arc(pt.x, pt.y, sat.isSelected ? 5 : 3, 0, 2 * Math.PI);
-                mercatorCtx.fillStyle = sat.isSelected ? "rgba(255,0,0,0.9)" : "rgba(0,255,0,0.7)";
-                mercatorCtx.fill();
-            } catch (e) { /* Silent error */
+        // We'll keep track of all label positions to avoid overlaps
+        let labelRows = [];
+
+        // 1. Project satellites to Mercator map and sort by y (latitude)
+        let mappedSats = satellites
+            .filter(sat => sat.mesh.visible && sat.satrec)
+            .map(sat => {
+                try {
+                    const posVel = satellite.propagate(sat.satrec, now);
+                    if (!posVel || !posVel.position) return null;
+                    const geo = satellite.eciToGeodetic(posVel.position, gmstNow);
+                    const pt = latLonToMercator(
+                        satellite.degreesLat(geo.latitude),
+                        satellite.degreesLong(geo.longitude)
+                    );
+                    return { sat, pt };
+                } catch (e) { return null; }
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.pt.y - b.pt.y); // Top-to-bottom
+
+        mappedSats.forEach(({ sat, pt }) => {
+            // Draw satellite icon (centered)
+            let iconW = 18, iconH = 18;
+            mercatorCtx.drawImage(
+                mercatorSatIcon,
+                pt.x - iconW / 2,
+                pt.y - iconH / 2,
+                iconW,
+                iconH
+            );
+
+            // Decide label position: default 30px above, but avoid overlap
+            let labelY = pt.y - 30;
+            let labelX = pt.x + 8 + iconW / 2; // 8px right of icon
+            let name = sat.satellite_name;
+
+            // Check for overlap with previous labels
+            for (let attempt = 0; attempt < 2; attempt++) {
+                let overlap = labelRows.some(r =>
+                    Math.abs(r.x - labelX) < 60 && Math.abs(r.y - labelY) < 18
+                );
+                if (!overlap) break;
+                // If overlap, put it below instead of above
+                labelY = pt.y + 30;
             }
+            labelRows.push({ x: labelX, y: labelY });
+
+            // Draw leader line from icon to label
+            mercatorCtx.save();
+            mercatorCtx.strokeStyle = "#aaa";
+            mercatorCtx.lineWidth = 1;
+            mercatorCtx.beginPath();
+            mercatorCtx.moveTo(pt.x, pt.y + (labelY > pt.y ? iconH/2 : -iconH/2)); // From top/bottom of icon
+            mercatorCtx.lineTo(labelX - 4, labelY + 7); // To left edge of label text
+            mercatorCtx.stroke();
+            mercatorCtx.restore();
+
+            // Draw label text
+            mercatorCtx.font = sat.isSelected ? "bold 12px sans-serif" : "11px sans-serif";
+            mercatorCtx.fillStyle = sat.isSelected ? "#ff4444" : "#00aaff";
+            mercatorCtx.textAlign = "left";
+            mercatorCtx.textBaseline = "middle";
+            mercatorCtx.fillText(name, labelX, labelY + 7);
         });
+
+        // After clearing the map...
+        //mercatorCtx.clearRect(0, 0, mercatorCanvasElement.width, mercatorCanvasElement.height);
+
+        // Draw the day/night terminator overlay
+        drawDayNightTerminatorMercator(
+            mercatorCtx, mercatorCanvasElement.width, mercatorCanvasElement.height);
     }
+
 
     function latLonToMercator(latDeg, lonDeg) {
         const currentWidth = mercatorCanvasElement ? mercatorCanvasElement.width : mapWidth;
