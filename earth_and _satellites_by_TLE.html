@@ -4,13 +4,250 @@
     <meta charset="UTF-8">
     <title>Satellite Simulation - HTML Controls</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/arcazj/openbexi_earth_orbit/master/css/style.css">
+    <style>
+        /* Minimal inline styles, if any, specific to HTML structure before CSS loads */
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+
+        canvas {
+            display: block; /* Default for the main 3D canvas */
+        }
+
+        /* Menu Toggle Button */
+        #menuToggleBtn {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1001; /* Above controls container */
+            background-color: rgba(50, 50, 50, 0.8);
+            color: white;
+            border: 1px solid #666;
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            transition: left 0.3s ease-in-out;
+        }
+
+        /* Controls Container (Menu Panel) */
+        #controlsContainer {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(40, 40, 40, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            width: 280px;
+            max-height: calc(100vh - 20px);
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(0%); /* Initially visible */
+        }
+
+        #controlsContainer.menu-hidden {
+            transform: translateX(calc(-100% - 20px)); /* Slide out completely */
+        }
+
+        /* Version Display within Menu */
+        #versionDisplay {
+            color: #888;
+            font-size: 12px;
+            text-align: center;
+            padding: 5px 0 10px 0;
+            border-bottom: 1px solid #555;
+            margin-bottom: 10px;
+            word-wrap: break-word; /* Ensure long links don't break layout */
+        }
+
+        #versionDisplay a {
+            color: #00aaff; /* Link color */
+            text-decoration: none;
+        }
+
+        #versionDisplay a:hover {
+            text-decoration: underline;
+        }
+
+        /* Control Groups within Menu */
+        .control-group {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #555;
+        }
+
+        .control-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        /* Collapsible Section Headers (H3) */
+        #controlsContainer h3 {
+            color: #00aaff;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #controlsContainer h3 .toggle-icon {
+            font-size: 12px;
+            margin-left: 8px;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        #controlsContainer h3 .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        /* Collapsible Content Styling */
+        .collapsible-content {
+            max-height: 500px; /* Large enough to show content */
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out, margin 0.3s ease-in-out;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+            padding-top: 0 !important; /* Ensure padding collapses */
+            padding-bottom: 0 !important;
+            margin-top: -10px; /* Adjust to pull up following element */
+            border-top: none; /* Hide border if any was applied when open */
+        }
+
+
+        /* Labels for Controls */
+        #controlsContainer label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        /* Select Dropdowns */
+        #controlsContainer select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: #fff;
+            font-size: 13px;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+
+        /* Checkboxes */
+        #controlsContainer input[type="checkbox"] {
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        #controlsContainer .checkbox-label { /* Label next to a checkbox */
+            display: inline-block;
+            vertical-align: middle;
+            font-weight: normal;
+            color: #eee;
+            cursor: pointer; /* Make the text label clickable for the checkbox */
+        }
+
+        /* Satellite Info Panel */
+        #satelliteInfo {
+            margin-top: 10px;
+            color: #fff;
+            font-family: monospace;
+            background-color: #222;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            white-space: pre-wrap; /* Preserve whitespace and newlines */
+            border: 1px solid #444;
+            max-height: 200px; /* Limit height and enable scroll if needed */
+            overflow-y: auto;
+        }
+
+        /* Satellite Count Display */
+        #satelliteCountDisplay {
+            font-size: 13px;
+            color: #00aaff;
+            font-weight: bold;
+        }
+
+        /* Mercator Map Styling */
+        #mercatorContainer {
+            position: absolute;
+            display: none; /* Hidden by default, JS controls visibility */
+            pointer-events: auto; /* Allow interaction if needed for future features like map panning */
+            border: 1px solid #555;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            /* Default to corner position */
+            top: 10px;
+            right: 10px;
+            width: 400px;
+            height: 200px;
+            background-color: #111; /* Fallback if background image fails */
+        }
+
+        #mercatorContainer.fullscreen {
+            top: 0;
+            left: 0;
+            right: auto; /* Override right positioning for fullscreen */
+            width: 100vw;
+            height: 100vh;
+            border: none; /* No border in fullscreen */
+            box-shadow: none; /* No shadow in fullscreen */
+            z-index: 900; /* Below controls but above 3D canvas if it were visible */
+        }
+
+        .mapBackground {
+            position: relative;
+            width: 100%; /* Takes full width of its parent (#mercatorContainer) */
+            height: 100%; /* Takes full height of its parent */
+            /* background property will be set by JS attempting to load from GitHub */
+            /* CSS fallback is applied via .fallback-css class if JS determines remote map texture fails */
+            background-color: #2a2a2a; /* Default background if no image loads */
+            background-repeat: no-repeat;
+            background-size: 100% 100%; /* Ensure it covers the area */
+        }
+
+        #mercatorCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Fallback class applied by JS if remote image load fails for Mercator background */
+        .mapBackground.fallback-css { /* This class is added by JS if GitHub image fails */
+            background: #333 url('https://placehold.co/400x200/222222/ffffff?text=Map+Load+Error') no-repeat center center !important;
+            background-size: contain !important; /* Use contain for placeholders to see text */
+        }
+
+        #mercatorContainer.fullscreen .mapBackground.fallback-css {
+            background: #333 url('https://placehold.co/1920x1080/222222/ffffff?text=Map+Load+Error+Fullscreen') no-repeat center center !important;
+            background-size: contain !important;
+        }
+
+    </style>
     <script src="https://unpkg.com/satellite.js@4.0.0/dist/satellite.min.js"></script>
     <script type="importmap">
         {
           "imports": {
-             "three": "https://cdn.jsdelivr.net/npm/three@0.176.0/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.176.0/examples/jsm/"
+            "three": "https://unpkg.com/three@0.176.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.176.0/examples/jsm/"
           }
         }
     </script>
@@ -85,13 +322,16 @@
     import * as THREE from 'three';
     import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 
-    // Version Constant (only the number now)
-    const versionNumber = "1.0e";
+    const versionNumber = "1.0";
     const versionRepoUrl = "https://github.com/arcazj/openbexi_earth_orbit";
     const versionText = `version ${versionNumber} - hosted at`;
 
+    // Base URLs - these will be updated if GitHub fetch fails
+    let GITHUB_REPO_RAW_BASE_URL = "https://raw.githubusercontent.com/arcazj/openbexi_earth_orbit/master/";
+    let CONFIG_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "config/";
+    let TLE_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "json/tle/";
+    let usingLocalAssets = false; // Flag to indicate if we've switched to local assets
 
-    // GLOBALS
     let scene, camera, renderer, earthMesh, controls;
     let earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig;
     let globalScale;
@@ -100,16 +340,9 @@
     let orbitLine = null;
     let currentSelectedSatellite = null;
     let textureLoader;
-
-    // Global variable for satellite icon image (Mercator)
     let mercatorSatIcon = new Image();
-    mercatorSatIcon.src = satelliteConfig?.icon || 'icons/ob_satellite.png';
-    mercatorSatIcon.onerror = () => {
-        mercatorSatIcon.src = 'https://placehold.co/24x24/3333cc/ffffff?text=S';
-    };
+    let mercatorSatIconLoaded = false;
 
-
-    // Parameters object
     const simParams = {
         orbitTypeFilter: "MEO",
         companyFilter: "ALL COMPANY",
@@ -120,103 +353,159 @@
         useHighDefTexture: false
     };
 
-    // HTML Element References
     let orbitTypeFilterSelect, companyFilterSelect, satelliteCountDisplay;
     let view3DToggle, viewMercatorToggle, showOrbitToggle, highDefToggleElement;
     let satelliteSelectDropdown, satelliteInfoDiv;
     let mercatorContainer, mercatorCanvasElement, mapBackgroundDiv;
     let controlsContainerElement, menuToggleBtnElement, versionDisplayElement;
 
+    function getFullGitHubUrl(relativePath) {
+        if (!relativePath || typeof relativePath !== 'string') {
+            console.warn("getFullGitHubUrl: received invalid path:", relativePath);
+            return usingLocalAssets ? relativePath.replace(/^\//, '') : null;
+        }
+        if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+            return relativePath;
+        }
+        if (usingLocalAssets) {
+            return relativePath.replace(/^\//, '');
+        }
+        return GITHUB_REPO_RAW_BASE_URL + relativePath.replace(/^\//, '');
+    }
 
-    // UTILITY: fetchJSON
     function fetchJSON(url) {
         return fetch(url).then(resp => {
-            if (!resp.ok) throw new Error(`Failed to load ${url}: ${resp.statusText}`);
+            if (!resp.ok) throw new Error(`Failed to load ${url}: ${resp.statusText} (Status: ${resp.status})`);
             return resp.json();
         }).catch(error => {
-            console.error(`Error fetching ${url}:`, error);
-            if (url.endsWith('.json')) {
-                if (url.includes('tle')) return [];
-                return {};
-            }
-            throw error;
+            console.error(`Error fetching JSON from ${url}:`, error.message); // Log only message for brevity
+            if (url.includes('/tle/')) return [];
+            return {};
         });
     }
 
-    // Utility function to detect mobile devices
     function isMobileDevice() {
-        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-        return /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(userAgent);
+        return /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(navigator.userAgent || navigator.vendor || window.opera);
     }
 
-    // LOAD CONFIGS
     async function loadConfigs() {
+        console.log("Attempting to load configurations from GitHub:", CONFIG_BASE_URL);
+        let primaryLoadSuccess = false;
         try {
-            [earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig] = await Promise.all([
-                fetchJSON('config/earth.json'), fetchJSON('config/constants.json'),
-                fetchJSON('config/satellite.json'), fetchJSON('config/scene.json'),
-                fetchJSON('config/controls.json')
+            const results = await Promise.all([
+                fetchJSON(CONFIG_BASE_URL + 'earth.json'),
+                fetchJSON(CONFIG_BASE_URL + 'constants.json'),
+                fetchJSON(CONFIG_BASE_URL + 'satellite.json'),
+                fetchJSON(CONFIG_BASE_URL + 'scene.json'),
+                fetchJSON(CONFIG_BASE_URL + 'controls.json')
             ]);
-            earthConfig = earthConfig || {};
-            earthConfig.diameter = earthConfig.diameter || 12742;
-            earthConfig.texture = earthConfig.texture || 'textures/1_earth_16k.jpg';
-            earthConfig.textureLight = earthConfig.textureLight || 'textures/earthmap1k_light.jpg';
+            [earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig] = results;
 
-            satelliteConfig = satelliteConfig || {icon: 'textures/satellite_icon.png', scale: [0.1, 0.1, 0.1]};
-            sceneConfig = sceneConfig || {
-                camera: {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]},
-                ambientLight: {color: 0xffffff, intensity: 0.5},
-                directionalLight: {color: 0xffffff, intensity: 1, position: [5, 3, 5]}
-            };
-            controlsConfig = controlsConfig || {enableDamping: true, dampingFactor: 0.05};
-            globalScale = (earthConfig.diameter / 2) / 10;
-        } catch (error) {
-            console.error("Failed to load configurations:", error);
-            earthConfig = {
-                diameter: 12742,
-                texture: 'https://placehold.co/4096x2048/000099/ffffff?text=Earth+HD+Error',
-                textureLight: 'https://placehold.co/1024x512/0000ff/ffffff?text=Earth+SD+Error'
-            };
-            satelliteConfig = {icon: 'https://placehold.co/32x32/ff0000/ffffff?text=Sat', scale: [0.1, 0.1, 0.1]};
-            sceneConfig = {
-                camera: {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]},
-                ambientLight: {color: 0xffffff, intensity: 0.5},
-                directionalLight: {color: 0xffffff, intensity: 1, position: [5, 3, 5]}
-            };
-            controlsConfig = {enableDamping: true, dampingFactor: 0.05};
-            globalScale = (earthConfig.diameter / 2) / 10;
-            alert("Error loading configurations. Using default settings.");
+            if (!earthConfig || Object.keys(earthConfig).length === 0) {
+                throw new Error("GitHub config load resulted in empty critical config (e.g., earth.json).");
+            }
+            console.log("Configurations loaded successfully from GitHub.");
+            primaryLoadSuccess = true;
+
+        } catch (githubError) {
+            console.warn("GitHub configuration load failed:", githubError.message, "Attempting local fallback.");
+            usingLocalAssets = true;
+            GITHUB_REPO_RAW_BASE_URL = "";
+            CONFIG_BASE_URL = "config/";
+            TLE_BASE_URL = "json/tle/";
+
+            // alert("Failed to load configurations from GitHub. Attempting to load from local paths..."); // User feedback
+
+            try {
+                const results = await Promise.all([
+                    fetchJSON(CONFIG_BASE_URL + 'earth.json'),
+                    fetchJSON(CONFIG_BASE_URL + 'constants.json'),
+                    fetchJSON(CONFIG_BASE_URL + 'satellite.json'),
+                    fetchJSON(CONFIG_BASE_URL + 'scene.json'),
+                    fetchJSON(CONFIG_BASE_URL + 'controls.json')
+                ]);
+                [earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig] = results;
+
+                if (!earthConfig || Object.keys(earthConfig).length === 0) {
+                    throw new Error("Local config load also resulted in empty critical config.");
+                }
+                console.log("Configurations loaded successfully from local fallback.");
+                primaryLoadSuccess = true; // Local load was successful
+            } catch (localError) {
+                console.error("Both GitHub and local configuration loads failed:", localError.message, "Using hardcoded fallbacks.");
+                // Hardcoded fallbacks are applied below if primaryLoadSuccess is still false
+            }
         }
+
+        if (!primaryLoadSuccess) { // If both GitHub and local attempts failed
+            earthConfig = { diameter: 12742, texture: 'textures/1_earth_16k.jpg', textureLight: 'textures/earthmap1k_light.jpg' };
+            satelliteConfig = { icon: 'icons/ob_satellite.png', scale: [0.1, 0.1, 0.1], mercatorIcon: 'icons/ob_satellite.png' };
+            sceneConfig = { camera: {fov: 45, near: 0.1, far: 1000, position: [0,0,30]}, ambientLight: {color:0xffffff, intensity:0.5}, directionalLight: {color:0xffffff, intensity:1, position:[5,3,5]}};
+            controlsConfig = {enableDamping: true, dampingFactor: 0.05};
+            constantsConfig = {};
+            alert("Error loading configurations from all sources. Using default settings. App functionality may be limited.");
+        }
+
+        // Ensure defaults for critical properties after attempting loads
+        earthConfig.diameter = earthConfig.diameter || 12742;
+        earthConfig.texture = earthConfig.texture || 'textures/1_earth_16k.jpg';
+        earthConfig.textureLight = earthConfig.textureLight || 'textures/earthmap1k_light.jpg';
+        satelliteConfig.icon = satelliteConfig.icon || 'icons/ob_satellite.png';
+        satelliteConfig.scale = satelliteConfig.scale || [0.1, 0.1, 0.1];
+        satelliteConfig.mercatorIcon = satelliteConfig.mercatorIcon || 'icons/ob_satellite.png';
+        sceneConfig.camera = sceneConfig.camera || {fov: 45, near: 0.1, far: 1000, position: [0,0,30]};
+        sceneConfig.ambientLight = sceneConfig.ambientLight || {color:0xffffff, intensity:0.5};
+        sceneConfig.directionalLight = sceneConfig.directionalLight || {color:0xffffff, intensity:1, position:[5,3,5]};
+        controlsConfig.enableDamping = controlsConfig.enableDamping !== undefined ? controlsConfig.enableDamping : true;
+        controlsConfig.dampingFactor = controlsConfig.dampingFactor || 0.05;
+
+        globalScale = (earthConfig.diameter / 2) / 10;
     }
 
-    // FUNCTION TO UPDATE EARTH TEXTURE
     function updateEarthTexture() {
-        if (!earthMesh || !textureLoader || !earthConfig) return;
+        if (!earthMesh || !textureLoader || !earthConfig) {
+            console.warn("updateEarthTexture: Missing critical components.");
+            return;
+        }
 
-        const textureUrl = simParams.useHighDefTexture ? earthConfig.texture : earthConfig.textureLight;
-        console.log("Loading Earth texture:", textureUrl);
+        const hdTextureFullUrl = getFullGitHubUrl(earthConfig.texture);
+        const lightTextureFullUrl = getFullGitHubUrl(earthConfig.textureLight);
+        const textureToLoad = simParams.useHighDefTexture ? hdTextureFullUrl : lightTextureFullUrl;
 
-        textureLoader.load(textureUrl, (texture) => {
-            earthMesh.material.map = texture;
+        if (!textureToLoad) {
+            console.error("Earth Texture URL is null. Check config paths.");
+            earthMesh.material.map = null;
+            earthMesh.material.color.set(0x1a237e);
             earthMesh.material.needsUpdate = true;
-            console.log("Earth texture updated to:", textureUrl);
-        }, undefined, (err) => {
-            console.error('Error loading Earth texture:', textureUrl, err, '. Using fallback.');
-            const fallbackTextureUrl = simParams.useHighDefTexture ? 'https://placehold.co/4096x2048/111155/ffffff?text=HD+Load+Error' : 'https://placehold.co/1024x512/222266/ffffff?text=SD+Load+Error';
-            textureLoader.load(fallbackTextureUrl, (fallbackMap) => {
-                earthMesh.material.map = fallbackMap;
+            return;
+        }
+        console.log("Attempting to load Earth texture:", textureToLoad);
+
+        textureLoader.load(textureToLoad,
+            (texture) => {
+                earthMesh.material.map = texture;
+                earthMesh.material.color.set(0xffffff);
                 earthMesh.material.needsUpdate = true;
-            });
-        });
+                console.log("Earth texture successfully updated to:", textureToLoad);
+            },
+            undefined,
+            (err) => {
+                console.error('Error loading Earth texture from:', textureToLoad, err, '. Using placeholder.');
+                const fallbackPlaceholder = `https://placehold.co/${simParams.useHighDefTexture ? '4096x2048' : '1024x512'}/1c313a/ffffff?text=Earth+Load+Error`;
+                textureLoader.load(fallbackPlaceholder, (fallbackMap) => {
+                    earthMesh.material.map = fallbackMap;
+                    earthMesh.material.needsUpdate = true;
+                });
+            }
+        );
     }
 
-
-    // INIT 3D SCENE
     function init3D() {
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(sceneConfig.camera.fov, window.innerWidth / window.innerHeight, sceneConfig.camera.near, sceneConfig.camera.far);
         camera.position.set(...sceneConfig.camera.position);
         renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
@@ -226,7 +515,7 @@
         scene.add(dirLight);
 
         textureLoader = new THREE.TextureLoader();
-        const earthMat = new THREE.MeshPhongMaterial();
+        const earthMat = new THREE.MeshPhongMaterial({color: 0xffffff});
         earthMesh = new THREE.Mesh(new THREE.SphereGeometry(10, 64, 64), earthMat);
         scene.add(earthMesh);
 
@@ -235,9 +524,10 @@
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = controlsConfig.enableDamping;
         controls.dampingFactor = controlsConfig.dampingFactor;
+        controls.minDistance = 12;
+        controls.maxDistance = 100;
     }
 
-    // INIT 2D MERCATOR VIEW
     function initMercatorView() {
         mercatorContainer = document.getElementById("mercatorContainer");
         mapBackgroundDiv = mercatorContainer.querySelector(".mapBackground");
@@ -249,95 +539,154 @@
         mercatorCanvasElement.height = mapHeight;
         mercatorCtx = mercatorCanvasElement.getContext("2d");
 
-        const primaryMapTextureUrl = 'textures/earthmap1k.jpg';
-        const img = new Image();
-        img.src = primaryMapTextureUrl;
-        img.onload = () => {
-            mapBackgroundDiv.classList.remove('fallback');
-            console.log("Mercator map texture loaded.");
-        };
-        img.onerror = () => {
-            console.warn(`Mercator map texture '${primaryMapTextureUrl}' failed. Fallback applied.`);
-            mapBackgroundDiv.classList.add('fallback');
-        };
-    }
+        const remoteMapBgUrl = getFullGitHubUrl('textures/earthmap1k.jpg');
 
-    // SETUP TLE SATELLITES
-    async function setupTLESatellites(jsonFilePath) {
-        try {
-            let tleData = await fetchJSON(jsonFilePath);
-            if ((!Array.isArray(tleData) || tleData.length === 0) && jsonFilePath === 'json/tle/TLE.json') {
-                const backupTleData = await fetchJSON('json/tle/TLE_backup.json');
-                if (backupTleData && backupTleData.length > 0) {
-                    tleData = backupTleData;
-                    alert("Primary TLE failed. Loaded backup.");
-                } else {
-                    console.error("All TLE data sources failed.");
-                    alert("Critical Error: No satellite data.");
-                    return;
-                }
-            }
-            const satTextureLoader = new THREE.TextureLoader();
-            const satIconUrl = satelliteConfig.icon || 'https://placehold.co/32x32/ff0000/ffffff?text=S_Icon';
-            const baseMaterial = new THREE.SpriteMaterial({
-                map: satTextureLoader.load(satIconUrl, undefined, () => {
-                }, (err) => {
-                    console.error('Error loading satellite icon:', err, '. Using fallback.');
-                    baseMaterial.map = satTextureLoader.load('https://placehold.co/32x32/ff0000/ffffff?text=S');
-                    baseMaterial.needsUpdate = true;
-                })
-            });
-            satellites.forEach(s => scene.remove(s.mesh));
-            satellites.length = 0;
-            tleData.forEach(item => {
-                const {company, satellite_name, norad_id, type, launch_date, tle_line1, tle_line2} = item;
-                if (!tle_line1 || !tle_line2) {
-                    console.warn(`Skipping ${satellite_name || norad_id}: missing TLE.`);
-                    return;
-                }
-                try {
-                    const satrec = satellite.twoline2satrec(tle_line1, tle_line2);
-                    if (!satrec) throw new Error("Failed to parse TLE.");
-                    const sprite = new THREE.Sprite(baseMaterial.clone());
-                    sprite.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]));
-                    scene.add(sprite);
-                    satellites.push({
-                        mesh: sprite,
-                        satrec,
-                        orbitType: type || "N/A",
-                        company: company || "N/A",
-                        satellite_name: satellite_name || `NORAD ${norad_id}`,
-                        norad_id,
-                        launch_date,
-                        tle_line1,
-                        tle_line2
-                    });
-                } catch (e) {
-                    console.error(`Error processing TLE for ${satellite_name || norad_id}: ${e.message}.`);
-                }
-            });
-        } catch (err) {
-            console.error("Error in setupTLESatellites:", err);
-            alert("Error setting up satellite data.");
+        if (remoteMapBgUrl) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => {
+                mapBackgroundDiv.style.backgroundImage = `url(${remoteMapBgUrl})`;
+                mapBackgroundDiv.classList.remove('fallback-css');
+                console.log("Mercator map background texture loaded:", remoteMapBgUrl);
+            };
+            img.onerror = () => {
+                console.warn(`Mercator map background '${remoteMapBgUrl}' failed. Applying CSS fallback.`);
+                mapBackgroundDiv.classList.add('fallback-css');
+            };
+            img.src = remoteMapBgUrl;
+        } else {
+            console.warn("Mercator map background URL is null. Applying CSS fallback.");
+            mapBackgroundDiv.classList.add('fallback-css');
+        }
+
+        const mercatorIconFullUrl = getFullGitHubUrl(satelliteConfig.mercatorIcon || 'icons/ob_satellite.png');
+        if (mercatorIconFullUrl) {
+            mercatorSatIcon.crossOrigin = "Anonymous";
+            mercatorSatIcon.onload = () => {
+                mercatorSatIconLoaded = true;
+                console.log("Mercator satellite icon loaded from:", mercatorSatIcon.src);
+            };
+            mercatorSatIcon.onerror = () => {
+                console.error("Mercator satellite icon failed to load from:", mercatorIconFullUrl, ". Using placeholder.");
+                mercatorSatIcon.src = 'https://placehold.co/16x16/ffffff/000000?text=S';
+                mercatorSatIcon.onload = () => { mercatorSatIconLoaded = true; };
+            };
+            mercatorSatIcon.src = mercatorIconFullUrl;
+        } else {
+            console.error("Mercator satellite icon path is null. Using placeholder.");
+            mercatorSatIcon.src = 'https://placehold.co/16x16/ffffff/000000?text=S';
+            mercatorSatIcon.onload = () => { mercatorSatIconLoaded = true; };
         }
     }
 
-    // SETUP HTML CONTROLS
+    async function setupTLESatellites() {
+        console.log("Attempting to load TLE data from:", TLE_BASE_URL); // TLE_BASE_URL is now correctly local or remote
+        const primaryTleUrl = TLE_BASE_URL + 'TLE.json';
+
+        try {
+            let tleData = await fetchJSON(primaryTleUrl);
+
+            if (!Array.isArray(tleData) || tleData.length === 0) {
+                console.warn(`TLE data from ${primaryTleUrl} failed or is empty.`);
+                if (usingLocalAssets) { // If already tried local and failed
+                    alert("Critical Error: Failed to load any satellite TLE data (local attempt also failed). Satellites will not be displayed.");
+                } else { // If GitHub attempt failed, now try local backup if specified (though loadConfigs should have switched TLE_BASE_URL)
+                    const backupTleUrl = (GITHUB_REPO_RAW_BASE_URL || "") + "json/tle/" + 'TLE_backup.json'; // Construct backup URL carefully
+                    console.log("Attempting backup TLE from:", backupTleUrl);
+                    tleData = await fetchJSON(backupTleUrl);
+                    if (!Array.isArray(tleData) || tleData.length === 0) {
+                        alert("Critical Error: Failed to load any satellite TLE data from primary or backup. Satellites will not be displayed.");
+                    } else {
+                        console.log("Loaded TLE data from backup source.");
+                    }
+                }
+                if (!Array.isArray(tleData) || tleData.length === 0) {
+                    processSatellites([], null);
+                    return;
+                }
+            }
+
+            const satIconFullUrl = getFullGitHubUrl(satelliteConfig.icon || 'icons/ob_satellite.png');
+            let satMaterial;
+
+            if (!satIconFullUrl) {
+                console.error("3D Satellite icon path is null. Using placeholder material.");
+                satMaterial = new THREE.SpriteMaterial({
+                    map: textureLoader.load('https://placehold.co/32x32/ff0000/ffffff?text=S_ERR')
+                });
+            } else {
+                satMaterial = new THREE.SpriteMaterial({
+                    map: textureLoader.load(satIconFullUrl, undefined,
+                        () => { console.log("3D Satellite icon loaded from:", satIconFullUrl); },
+                        (err) => {
+                            console.error('Error loading 3D satellite icon from:', satIconFullUrl, err, '. Using placeholder.');
+                            if (satMaterial) {
+                                satMaterial.map = textureLoader.load('https://placehold.co/32x32/ff0000/ffffff?text=S');
+                                satMaterial.needsUpdate = true;
+                            }
+                        })
+                });
+            }
+            processSatellites(tleData, satMaterial);
+
+        } catch(err) {
+            console.error("Error in setupTLESatellites (fetching/processing):", err);
+            alert("Error setting up satellite data. Check console.");
+            processSatellites([], null);
+        }
+    }
+
+    function processSatellites(tleData, baseMaterial) {
+        satellites.forEach(s => { if (s.mesh) scene.remove(s.mesh); });
+        satellites.length = 0;
+
+        if (!tleData || tleData.length === 0) {
+            console.warn("No TLE data to process.");
+            if (typeof updateSatelliteList === "function") updateSatelliteList();
+            return;
+        }
+        if (!baseMaterial) {
+            console.error("Base material for satellites is not available. Cannot create sprites.");
+            if (typeof updateSatelliteList === "function") updateSatelliteList();
+            return;
+        }
+
+        tleData.forEach(item => {
+            const {company, satellite_name, norad_id, type, launch_date, tle_line1, tle_line2} = item;
+            if (!tle_line1 || !tle_line2) { console.warn(`Skipping ${satellite_name || norad_id}: missing TLE lines.`); return; }
+            try {
+                const satrec = satellite.twoline2satrec(tle_line1, tle_line2);
+                if (!satrec) throw new Error("Failed to parse TLE.");
+
+                const sprite = new THREE.Sprite(baseMaterial.clone());
+                sprite.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]));
+                scene.add(sprite);
+                satellites.push({
+                    mesh: sprite, satrec,
+                    orbitType: type || "N/A",
+                    company: company || "N/A",
+                    satellite_name: satellite_name || `NORAD ${norad_id}`,
+                    norad_id, launch_date, tle_line1, tle_line2
+                });
+            } catch (e) { console.error(`Error processing TLE for ${satellite_name || norad_id}: ${e.message}.`); }
+        });
+        console.log(`${satellites.length} satellites processed.`);
+        if (typeof updateSatelliteList === "function") updateSatelliteList();
+    }
+
     function setupHTMLControls() {
         controlsContainerElement = document.getElementById('controlsContainer');
         menuToggleBtnElement = document.getElementById('menuToggleBtn');
         versionDisplayElement = document.getElementById('versionDisplay');
 
-        // Setup version display with link
-        if (versionDisplayElement) {
+        if(versionDisplayElement) {
             const versionLink = document.createElement('a');
             versionLink.href = versionRepoUrl;
             versionLink.textContent = `GitHub Repo`;
-            versionLink.target = "_blank"; // Open in new tab
-            versionDisplayElement.textContent = `${versionText} `; // Add space before link
+            versionLink.target = "_blank";
+            versionDisplayElement.textContent = `${versionText} `;
             versionDisplayElement.appendChild(versionLink);
         }
-
 
         orbitTypeFilterSelect = document.getElementById('orbitTypeFilter');
         companyFilterSelect = document.getElementById('companyFilter');
@@ -352,37 +701,23 @@
         orbitTypeFilterSelect.value = simParams.orbitTypeFilter;
         view3DToggle.checked = simParams.view3D;
         viewMercatorToggle.checked = simParams.viewMercator;
-        if (highDefToggleElement) highDefToggleElement.checked = simParams.useHighDefTexture;
+        if(highDefToggleElement) highDefToggleElement.checked = simParams.useHighDefTexture;
         showOrbitToggle.checked = simParams.showOrbit;
-
-        let companies = Array.from(new Set(satellites.map(s => s.company))).sort();
-        companyFilterSelect.innerHTML = '<option value="ALL COMPANY">ALL COMPANY</option>';
-        companies.forEach(comp => {
-            const option = document.createElement('option');
-            option.value = comp;
-            option.textContent = comp;
-            companyFilterSelect.appendChild(option);
-        });
-        companyFilterSelect.value = simParams.companyFilter;
 
         orbitTypeFilterSelect.addEventListener('change', (e) => {
             simParams.orbitTypeFilter = e.target.value;
-            simParams.showOrbit = false;
-            showOrbitToggle.checked = false;
-            removeAllGeometry();
-            updateSatelliteList();
+            simParams.showOrbit = false; if(showOrbitToggle) showOrbitToggle.checked = false;
+            removeAllGeometry(); updateSatelliteList();
         });
         companyFilterSelect.addEventListener('change', (e) => {
             simParams.companyFilter = e.target.value;
-            simParams.showOrbit = false;
-            showOrbitToggle.checked = false;
-            removeAllGeometry();
-            updateSatelliteList();
+            simParams.showOrbit = false; if(showOrbitToggle) showOrbitToggle.checked = false;
+            removeAllGeometry(); updateSatelliteList();
         });
         view3DToggle.addEventListener('change', (e) => simParams.view3D = e.target.checked);
         viewMercatorToggle.addEventListener('change', (e) => simParams.viewMercator = e.target.checked);
 
-        if (highDefToggleElement) {
+        if(highDefToggleElement) {
             highDefToggleElement.addEventListener('change', (e) => {
                 simParams.useHighDefTexture = e.target.checked;
                 updateEarthTexture();
@@ -392,10 +727,7 @@
         showOrbitToggle.addEventListener('change', (e) => {
             simParams.showOrbit = e.target.checked;
             if (currentSelectedSatellite) updateOrbitTrajectory(currentSelectedSatellite);
-            else if (simParams.showOrbit) {
-                simParams.showOrbit = false;
-                e.target.checked = false;
-            }
+            else if (simParams.showOrbit) { simParams.showOrbit = false; e.target.checked = false; }
         });
         satelliteSelectDropdown.addEventListener('change', (e) => {
             simParams.selectedSatellite = e.target.value;
@@ -408,12 +740,9 @@
             const targetContent = document.getElementById(targetId);
             const icon = header.querySelector('.toggle-icon');
             if (targetContent && icon) {
-                targetContent.classList.remove('collapsed');
-                icon.classList.remove('collapsed');
-                icon.textContent = '▾';
+                targetContent.classList.remove('collapsed'); icon.classList.remove('collapsed'); icon.textContent = '▾';
                 header.addEventListener('click', () => {
-                    targetContent.classList.toggle('collapsed');
-                    icon.classList.toggle('collapsed');
+                    targetContent.classList.toggle('collapsed'); icon.classList.toggle('collapsed');
                     icon.textContent = targetContent.classList.contains('collapsed') ? '▸' : '▾';
                 });
             }
@@ -428,73 +757,102 @@
         }
     }
 
-    // UPDATE SATELLITE LIST
     function updateSatelliteList() {
+        if (!satellites || !satelliteSelectDropdown || !companyFilterSelect) {
+            console.warn("updateSatelliteList: DOM elements not ready or satellites not loaded.");
+            if(satelliteCountDisplay) satelliteCountDisplay.textContent = '0';
+            if(satelliteSelectDropdown) satelliteSelectDropdown.innerHTML = '<option value="None">None</option>';
+            if(companyFilterSelect) companyFilterSelect.innerHTML = '<option value="ALL COMPANY">ALL COMPANY</option>';
+            return;
+        }
+
         const filtered = satellites.filter(s =>
             (simParams.orbitTypeFilter === "ALL" || s.orbitType === simParams.orbitTypeFilter) &&
             (simParams.companyFilter === "ALL COMPANY" || s.company === simParams.companyFilter)
         );
         satellites.forEach(s => {
-            const isVisible = filtered.includes(s);
-            s.mesh.visible = isVisible;
-            if (isVisible) {
-                s.mesh.material.color.set(s.isSelected ? 0xff0000 : 0xffffff);
-                s.mesh.scale.set(...(s.isSelected ? (satelliteConfig.scale || [0.1, 0.1, 0.1]).map(v => v * 1.5) : (satelliteConfig.scale || [0.1, 0.1, 0.1])));
+            if (s.mesh) {
+                const isVisible = filtered.includes(s);
+                s.mesh.visible = isVisible;
+                if (isVisible) {
+                    s.mesh.material.color.set(s.isSelected ? 0xff0000 : 0xffffff);
+                    s.mesh.scale.set(...(s.isSelected ? (satelliteConfig.scale || [0.1,0.1,0.1]).map(v => v * 1.5) : (satelliteConfig.scale || [0.1,0.1,0.1])));
+                }
             }
         });
         if (currentSelectedSatellite && !filtered.includes(currentSelectedSatellite)) selectSatellite(null);
-        if (satelliteCountDisplay) satelliteCountDisplay.textContent = filtered.length;
+
+        if(satelliteCountDisplay) satelliteCountDisplay.textContent = filtered.length;
+
+        const uniqueCompanies = Array.from(new Set(satellites.map(s => s.company))).sort();
+        const currentCompanySelection = companyFilterSelect.value;
+        companyFilterSelect.innerHTML = '<option value="ALL COMPANY">ALL COMPANY</option>';
+        uniqueCompanies.forEach(comp => {
+            if(comp) {
+                const option = document.createElement('option');
+                option.value = comp; option.textContent = comp;
+                companyFilterSelect.appendChild(option);
+            }
+        });
+        if (uniqueCompanies.includes(currentCompanySelection)) {
+            companyFilterSelect.value = currentCompanySelection;
+        } else if (uniqueCompanies.length > 0 && simParams.companyFilter === "ALL COMPANY"){
+            companyFilterSelect.value = "ALL COMPANY";
+        } else if (uniqueCompanies.length > 0) {
+            companyFilterSelect.value = uniqueCompanies[0];
+            simParams.companyFilter = uniqueCompanies[0];
+        } else {
+            companyFilterSelect.value = "ALL COMPANY";
+            simParams.companyFilter = "ALL COMPANY";
+        }
+
 
         const currentDropdownValue = satelliteSelectDropdown.value;
         satelliteSelectDropdown.innerHTML = '<option value="None">None</option>';
         filtered.forEach(s => {
             const option = document.createElement('option');
-            option.value = s.satellite_name;
-            option.textContent = s.satellite_name;
+            option.value = s.satellite_name; option.textContent = s.satellite_name;
             satelliteSelectDropdown.appendChild(option);
         });
-        if (filtered.some(s => s.satellite_name === currentDropdownValue)) satelliteSelectDropdown.value = currentDropdownValue;
-        else {
+
+        if (filtered.some(s => s.satellite_name === currentDropdownValue)) {
+            satelliteSelectDropdown.value = currentDropdownValue;
+        } else {
             satelliteSelectDropdown.value = "None";
             if (simParams.selectedSatellite !== "None") selectSatellite(null);
         }
         if (satelliteSelectDropdown.value === "None" && currentSelectedSatellite) selectSatellite(null);
     }
 
-    // SELECT SATELLITE
     function selectSatellite(sat) {
-        if (currentSelectedSatellite) {
+        if (currentSelectedSatellite && currentSelectedSatellite.mesh) {
             currentSelectedSatellite.isSelected = false;
             if (currentSelectedSatellite.mesh.visible) {
                 currentSelectedSatellite.mesh.material.color.set(0xffffff);
-                currentSelectedSatellite.mesh.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]));
+                currentSelectedSatellite.mesh.scale.set(...(satelliteConfig.scale || [0.1,0.1,0.1]));
             }
         }
         currentSelectedSatellite = sat;
-        if (sat) {
+        if (sat && sat.mesh) {
             sat.isSelected = true;
             if (sat.mesh.visible) {
                 sat.mesh.material.color.set(0xff0000);
-                sat.mesh.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]).map(v => v * 3.5));
+                sat.mesh.scale.set(...(satelliteConfig.scale || [0.1,0.1,0.1]).map(v => v * 1.5));
             }
             simParams.selectedSatellite = sat.satellite_name;
-            satelliteSelectDropdown.value = sat.satellite_name;
+            if(satelliteSelectDropdown) satelliteSelectDropdown.value = sat.satellite_name;
             updateOrbitTrajectory(sat);
         } else {
             simParams.selectedSatellite = "None";
-            satelliteSelectDropdown.value = "None";
+            if(satelliteSelectDropdown) satelliteSelectDropdown.value = "None";
             removeAllGeometry();
         }
         updateSatelliteInfo(sat);
     }
 
-    // UPDATE SATELLITE INFO PANEL
     function updateSatelliteInfo(sat) {
         if (!satelliteInfoDiv) return;
-        if (!sat) {
-            satelliteInfoDiv.innerHTML = `<div style="font-weight:bold;">No satellite selected</div>`;
-            return;
-        }
+        if (!sat) { satelliteInfoDiv.innerHTML = `<div style="font-weight:bold;">No satellite selected</div>`; return; }
         satelliteInfoDiv.innerHTML = `
     <div style="font-weight:bold; margin-bottom:3px; color: #00aaff;">Selected: ${sat.satellite_name}</div>
     <div>Company: ${sat.company}</div><div>Type: ${sat.orbitType}</div>
@@ -503,49 +861,31 @@
     <div style="color:#aaa; font-size:10px;">TLE2: ${sat.tle_line2}</div>`;
     }
 
-    // REMOVE GEOMETRY
     function removeAllGeometry() {
-        if (orbitLine) {
-            scene.remove(orbitLine);
-            orbitLine.geometry.dispose();
-            orbitLine.material.dispose();
-            orbitLine = null;
-        }
+        if (orbitLine) { scene.remove(orbitLine); orbitLine.geometry.dispose(); orbitLine.material.dispose(); orbitLine = null; }
     }
 
-    // UPDATE ORBIT TRAJECTORY
     function updateOrbitTrajectory(satData) {
         removeAllGeometry();
         if (!simParams.showOrbit || !satData || !satData.satrec) return;
-        const meanMotion = satData.satrec.no;
-        if (meanMotion === 0) {
-            console.warn(`${satData.satellite_name} has zero mean motion.`);
-            return;
-        }
+        const meanMotion = satData.satrec.no; if (meanMotion === 0) { console.warn(`${satData.satellite_name} has zero mean motion.`); return; }
         const periodMins = 1440 / meanMotion;
-        const segments = 14400;
-        const step = periodMins / segments;
-        const orbitPoints = [];
-        const now = new Date();
+        const segments = 14400; const step = periodMins / segments;
+        const orbitPoints = []; const now = new Date();
         for (let i = 0; i <= segments; i++) {
             const future = new Date(now.getTime() + i * step * 60000);
             const posVel = satellite.propagate(satData.satrec, future);
             if (!posVel || !posVel.position) continue;
-            const {x, y, z} = posVel.position;
+            const { x, y, z } = posVel.position;
             const kmToScene = 10 / 6371;
             orbitPoints.push(new THREE.Vector3(x * kmToScene, z * kmToScene, y * kmToScene));
         }
-        if (orbitPoints.length < 2) {
-            console.warn(`Not enough points for orbit: ${orbitPoints.length}`);
-            return;
-        }
+        if (orbitPoints.length < 2) { console.warn(`Not enough points for orbit: ${orbitPoints.length}`); return; }
         const geometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-        const material = new THREE.LineBasicMaterial({color: 0xff0000});
-        orbitLine = new THREE.Line(geometry, material);
-        scene.add(orbitLine);
+        const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+        orbitLine = new THREE.Line(geometry, material); scene.add(orbitLine);
     }
 
-    // ANIMATION LOOP
     function animate() {
         requestAnimationFrame(animate);
         const now = new Date();
@@ -553,48 +893,41 @@
         const gmstNow = satellite.gstime(jdayNow);
 
         satellites.forEach(sat => {
-            if (!sat.mesh.visible || !sat.satrec) return;
+            if (!sat.mesh || !sat.mesh.visible || !sat.satrec) return;
             try {
                 const posVel = satellite.propagate(sat.satrec, now);
                 if (!posVel || !posVel.position) return;
                 const ecf = satellite.eciToEcf(posVel.position, gmstNow);
                 const kmToScene = 10 / 6371;
                 sat.mesh.position.set(ecf.x * kmToScene, ecf.z * kmToScene, ecf.y * kmToScene);
-            } catch (e) { /* Silent error for propagation issues */
-            }
+            } catch (e) { /* Silent error */ }
         });
 
         const show3D = simParams.view3D;
         const showMercator = simParams.viewMercator;
 
-        if (show3D && !showMercator) {
-            if (renderer) renderer.domElement.style.display = "block";
-            if (mercatorContainer) mercatorContainer.style.display = "none";
-        } else if (!show3D && showMercator) {
-            if (renderer) renderer.domElement.style.display = "none";
-            if (mercatorContainer) {
-                mercatorContainer.style.display = "block";
-                mercatorContainer.classList.add("fullscreen");
-            }
-        } else if (show3D && showMercator) {
-            if (renderer) renderer.domElement.style.display = "block";
-            if (mercatorContainer) {
-                mercatorContainer.style.display = "block";
-                mercatorContainer.classList.remove("fullscreen");
-            }
-        } else {
-            if (renderer) renderer.domElement.style.display = "none";
-            if (mercatorContainer) mercatorContainer.style.display = "none";
-        }
+        if (renderer) renderer.domElement.style.display = (show3D) ? "block" : "none";
 
-        if (showMercator && mercatorCanvasElement && mapBackgroundDiv) {
-            const currentMapContainerWidth = mapBackgroundDiv.clientWidth;
-            const currentMapContainerHeight = mapBackgroundDiv.clientHeight;
-            if (mercatorCanvasElement.width !== currentMapContainerWidth || mercatorCanvasElement.height !== currentMapContainerHeight) {
-                mercatorCanvasElement.width = currentMapContainerWidth;
-                mercatorCanvasElement.height = currentMapContainerHeight;
+        if (mercatorContainer) {
+            if (showMercator) {
+                mercatorContainer.style.display = "block";
+                if (!show3D) {
+                    mercatorContainer.classList.add("fullscreen");
+                } else {
+                    mercatorContainer.classList.remove("fullscreen");
+                }
+                if (mercatorCanvasElement && mapBackgroundDiv) {
+                    const currentMapContainerWidth = mapBackgroundDiv.clientWidth;
+                    const currentMapContainerHeight = mapBackgroundDiv.clientHeight;
+                    if (mercatorCanvasElement.width !== currentMapContainerWidth || mercatorCanvasElement.height !== currentMapContainerHeight) {
+                        mercatorCanvasElement.width = currentMapContainerWidth;
+                        mercatorCanvasElement.height = currentMapContainerHeight;
+                    }
+                    updateMercatorMap();
+                }
+            } else {
+                mercatorContainer.style.display = "none";
             }
-            updateMercatorMap();
         }
 
         if (show3D && controls) controls.update();
@@ -603,137 +936,143 @@
 
     function drawDayNightTerminatorMercator(ctx, width, height) {
         const now = new Date();
-        // Calculate subsolar longitude and latitude (declination)
         const hoursUTC = now.getUTCHours() + now.getUTCMinutes() / 60;
-        const subSolarLon = (hoursUTC * 15) - 180; // -180 at midnight UTC, +180 at noon UTC
+        const subSolarLon = (hoursUTC * 15) - 180;
         const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
-        const decl = 23.44 * Math.sin((2 * Math.PI / 365) * (dayOfYear - 81)); // Subsolar latitude
-        const subSolarLat = decl;
+        const N = dayOfYear;
+        const declRad = -Math.asin(0.39779 * Math.cos(0.98565 * (N + 10) * Math.PI/180 + 1.914 * Math.sin(0.98565 * (N - 2) * Math.PI/180) * Math.PI/180));
+        const subSolarLat = declRad * 180/Math.PI;
 
-        // Draw the night overlay as a polygon following the terminator
         ctx.save();
-        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(width, 0);
-        // Sample points across the longitude
-        const segments = 120;
-        for (let i = 0; i <= segments; i++) {
-            const frac = i / segments;
-            const lon = -180 + frac * 360;
-            // Approximate: latitude at night boundary at this longitude
-            // The night hemisphere is ~90° from the subsolar point
-            let lat = Math.asin(
-                -Math.cos((lon - subSolarLon) * Math.PI / 180) * Math.cos(subSolarLat * Math.PI / 180)
-            ) * 180 / Math.PI;
-            // Map to y in Mercator
-            const y = ((height / 2) - (width * Math.log(Math.tan((Math.PI / 4) + (lat * Math.PI / 360))) / (2 * Math.PI)));
-            const x = frac * width;
-            ctx.lineTo(x, y);
+
+        const points = [];
+        let firstPoint = null, lastPoint = null;
+
+        for (let i = 0; i <= width; i++) {
+            const lon = (i / width) * 360 - 180;
+            let terminatorLat = Math.atan(-Math.cos((lon - subSolarLon) * Math.PI/180) / Math.tan(subSolarLat * Math.PI/180)) * 180/Math.PI;
+            terminatorLat = Math.max(-85.05112878, Math.min(85.05112878, terminatorLat));
+            const p = latLonToMercator(terminatorLat, lon);
+            points.push(p);
+            if (i === 0) firstPoint = p;
+            if (i === width) lastPoint = p;
         }
-        ctx.lineTo(width, height);
-        ctx.lineTo(0, height);
+
+        if (!firstPoint) { ctx.restore(); return; }
+
+        ctx.moveTo(firstPoint.x, firstPoint.y);
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+
+        if (subSolarLat > 0) {
+            ctx.lineTo(lastPoint.x, height);
+            ctx.lineTo(firstPoint.x, height);
+        } else {
+            ctx.lineTo(lastPoint.x, 0);
+            ctx.lineTo(firstPoint.x, 0);
+        }
         ctx.closePath();
-        ctx.fillStyle = "#000";
         ctx.fill();
         ctx.restore();
     }
 
-    // 2D MERCATOR MAP UPDATE
     function updateMercatorMap() {
         if (!mercatorCtx || !mercatorCanvasElement || mercatorContainer.style.display === 'none') return;
 
         mercatorCtx.clearRect(0, 0, mercatorCanvasElement.width, mercatorCanvasElement.height);
+
+        if(typeof drawDayNightTerminatorMercator === 'function') {
+            drawDayNightTerminatorMercator(mercatorCtx, mercatorCanvasElement.width, mercatorCanvasElement.height);
+        }
+
         const now = new Date();
         const jdayNow = satellite.jday(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
         const gmstNow = satellite.gstime(jdayNow);
+        let labelPositions = [];
 
-        // We'll keep track of all label positions to avoid overlaps
-        let labelRows = [];
-
-        // 1. Project satellites to Mercator map and sort by y (latitude)
-        let mappedSats = satellites
-            .filter(sat => sat.mesh.visible && sat.satrec)
+        const satDrawData = satellites
+            .filter(sat => sat.mesh && sat.mesh.visible && sat.satrec)
             .map(sat => {
                 try {
                     const posVel = satellite.propagate(sat.satrec, now);
                     if (!posVel || !posVel.position) return null;
                     const geo = satellite.eciToGeodetic(posVel.position, gmstNow);
-                    const pt = latLonToMercator(
-                        satellite.degreesLat(geo.latitude),
-                        satellite.degreesLong(geo.longitude)
-                    );
-                    return { sat, pt };
+                    const pt = latLonToMercator(satellite.degreesLat(geo.latitude), satellite.degreesLong(geo.longitude));
+                    return { sat, pt, name: sat.satellite_name };
                 } catch (e) { return null; }
             })
             .filter(Boolean)
-            .sort((a, b) => a.pt.y - b.pt.y); // Top-to-bottom
+            .sort((a,b) => a.pt.y - b.pt.y);
 
-        mappedSats.forEach(({ sat, pt }) => {
-            // Draw satellite icon (centered)
-            let iconW = 18, iconH = 18;
-            mercatorCtx.drawImage(
-                mercatorSatIcon,
-                pt.x - iconW / 2,
-                pt.y - iconH / 2,
-                iconW,
-                iconH
-            );
+        satDrawData.forEach(data => {
+            const { sat, pt, name } = data;
+            const iconSize = 12;
+            const leaderLength = 15;
+            const textPadding = { x: 5, y: 3 };
 
-            // Decide label position: default 30px above, but avoid overlap
-            let labelY = pt.y - 30;
-            let labelX = pt.x + 8 + iconW / 2; // 8px right of icon
-            let name = sat.satellite_name;
-
-            // Check for overlap with previous labels
-            for (let attempt = 0; attempt < 2; attempt++) {
-                let overlap = labelRows.some(r =>
-                    Math.abs(r.x - labelX) < 60 && Math.abs(r.y - labelY) < 18
-                );
-                if (!overlap) break;
-                // If overlap, put it below instead of above
-                labelY = pt.y + 30;
+            if (mercatorSatIconLoaded && mercatorSatIcon.complete && mercatorSatIcon.naturalHeight !== 0) {
+                mercatorCtx.drawImage(mercatorSatIcon, pt.x - iconSize / 2, pt.y - iconSize / 2, iconSize, iconSize);
+            } else {
+                mercatorCtx.beginPath();
+                mercatorCtx.arc(pt.x, pt.y, iconSize / 2, 0, 2 * Math.PI);
+                mercatorCtx.fillStyle = sat.isSelected ? "rgba(255,0,0,0.8)" : "rgba(0,255,0,0.8)";
+                mercatorCtx.fill();
             }
-            labelRows.push({ x: labelX, y: labelY });
 
-            // Draw leader line from icon to label
-            mercatorCtx.save();
-            mercatorCtx.strokeStyle = "#aaa";
-            mercatorCtx.lineWidth = 1;
-            mercatorCtx.beginPath();
-            mercatorCtx.moveTo(pt.x, pt.y + (labelY > pt.y ? iconH/2 : -iconH/2)); // From top/bottom of icon
-            mercatorCtx.lineTo(labelX - 4, labelY + 7); // To left edge of label text
-            mercatorCtx.stroke();
-            mercatorCtx.restore();
+            mercatorCtx.font = sat.isSelected ? "bold 11px Arial" : "10px Arial";
+            const textMetrics = mercatorCtx.measureText(name);
+            const labelWidth = textMetrics.width + 2 * textPadding.x;
+            const labelHeight = 12 + 2 * textPadding.y;
 
-            // Draw label text
-            mercatorCtx.font = sat.isSelected ? "bold 12px sans-serif" : "11px sans-serif";
-            mercatorCtx.fillStyle = sat.isSelected ? "#ff4444" : "#00aaff";
-            mercatorCtx.textAlign = "left";
-            mercatorCtx.textBaseline = "middle";
-            mercatorCtx.fillText(name, labelX, labelY + 7);
+            const angles = [ -Math.PI / 4, -Math.PI / 2, -3 * Math.PI / 4, Math.PI, 3 * Math.PI / 4, Math.PI / 2, Math.PI / 4, 0 ];
+            let bestPos = null;
+
+            for (const angle of angles) {
+                const leaderEndX = pt.x + (iconSize / 2 + leaderLength) * Math.cos(angle);
+                const leaderEndY = pt.y + (iconSize / 2 + leaderLength) * Math.sin(angle);
+                let textX = leaderEndX + ( (Math.cos(angle) >= 0 || Math.abs(Math.cos(angle)) < 0.1) ? textPadding.x : -labelWidth + textPadding.x );
+                let textY = leaderEndY - labelHeight / 2;
+                const currentLabelRect = { x: textX - textPadding.x, y: textY - textPadding.y, width: labelWidth, height: labelHeight };
+
+                let isOverlapping = labelPositions.some(lp =>
+                    currentLabelRect.x < lp.x + lp.width && currentLabelRect.x + currentLabelRect.width > lp.x &&
+                    currentLabelRect.y < lp.y + lp.height && currentLabelRect.y + currentLabelRect.height > lp.y);
+
+                if (!isOverlapping) { bestPos = { leaderEndX, leaderEndY, textX, textY, labelRect: currentLabelRect }; break; }
+            }
+
+            if (bestPos) {
+                labelPositions.push(bestPos.labelRect);
+                mercatorCtx.beginPath(); mercatorCtx.moveTo(pt.x, pt.y);
+                mercatorCtx.lineTo(bestPos.leaderEndX, bestPos.leaderEndY);
+                mercatorCtx.strokeStyle = "rgba(200, 200, 200, 0.7)"; mercatorCtx.lineWidth = 1; mercatorCtx.stroke();
+                mercatorCtx.fillStyle = "rgba(0, 0, 0, 0.6)";
+                mercatorCtx.fillRect(bestPos.labelRect.x, bestPos.labelRect.y, bestPos.labelRect.width, bestPos.labelRect.height);
+                mercatorCtx.fillStyle = sat.isSelected ? "#ff8080" : "#00ddff";
+                mercatorCtx.textAlign = "left"; mercatorCtx.textBaseline = "middle";
+                mercatorCtx.fillText(name, bestPos.textX, bestPos.textY + labelHeight/2 - textPadding.y/2 +1);
+            } else {
+                mercatorCtx.fillStyle = sat.isSelected ? "#ff4444" : "#00aaff";
+                mercatorCtx.textAlign = "center"; mercatorCtx.textBaseline = "bottom";
+                mercatorCtx.fillText(name, pt.x, pt.y - iconSize/2 - 2);
+            }
         });
-
-        // After clearing the map...
-        //mercatorCtx.clearRect(0, 0, mercatorCanvasElement.width, mercatorCanvasElement.height);
-
-        // Draw the day/night terminator overlay
-        drawDayNightTerminatorMercator(
-            mercatorCtx, mercatorCanvasElement.width, mercatorCanvasElement.height);
     }
-
 
     function latLonToMercator(latDeg, lonDeg) {
         const currentWidth = mercatorCanvasElement ? mercatorCanvasElement.width : mapWidth;
         const currentHeight = mercatorCanvasElement ? mercatorCanvasElement.height : mapHeight;
         const x = (lonDeg + 180) * (currentWidth / 360);
-        const latRad = latDeg * Math.PI / 180;
+        const clampedLatDeg = Math.max(-85.05112878, Math.min(85.05112878, latDeg));
+        const latRad = clampedLatDeg * Math.PI / 180;
         const mercN = Math.log(Math.tan((Math.PI / 4) + (latRad / 2)));
         const y = (currentHeight / 2) - (currentWidth * mercN / (2 * Math.PI));
         return {x, y};
     }
 
-    // WINDOW RESIZE HANDLER
     function onWindowResize() {
         if (camera && renderer) {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -741,33 +1080,30 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
     }
-
     window.addEventListener('resize', onWindowResize);
 
-    // STARTUP FUNCTION
     async function start() {
         try {
             await loadConfigs();
             init3D();
             initMercatorView();
-            await setupTLESatellites('json/tle/TLE.json');
-            if (satellites.length === 0) {
-                alert("Warning: No satellite data loaded. Check TLE files.");
-            }
+            await setupTLESatellites();
+
             setupHTMLControls();
             updateSatelliteList();
-            if (simParams.showOrbit && currentSelectedSatellite) updateOrbitTrajectory(currentSelectedSatellite);
-            else {
+
+            if (simParams.showOrbit && currentSelectedSatellite) {
+                updateOrbitTrajectory(currentSelectedSatellite);
+            } else {
                 simParams.showOrbit = false;
                 if (showOrbitToggle) showOrbitToggle.checked = false;
             }
             animate();
         } catch (e) {
             console.error("Critical error during initialization:", e);
-            document.body.innerHTML = `<div style="color:red; padding:20px; font-family:monospace;"><h1>Initialization Failed</h1><pre>${e.stack || e.message}</pre><p>Check console and config/TLE files.</p></div>`;
+            document.body.innerHTML = `<div style="color:red; padding:20px; font-family:monospace;"><h1>Initialization Failed</h1><pre>${e.stack || e.message}</pre><p>Check console and ensure remote resources (configs, TLEs, textures) are accessible on GitHub and paths are correct.</p></div>`;
         }
     }
-
     start();
 </script>
 </body>
