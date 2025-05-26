@@ -1,0 +1,195 @@
+{
+  "26900": {
+    "name": "Intelsat 902 (IS-902)",
+    "meta": {
+      "norad_id": 26900,
+      "cospar_id": "2001-039A",
+      "operator": "Intelsat",
+      "manufacturer": "Space Systems/Loral",
+      "bus": "SSL 1300HL",
+      "launch_date": "2001-08-30T06:46:00Z",
+      "launch_vehicle": "Ariane 44L",
+      "launch_site": "Guiana Space Centre, Kourou, ELA-2",
+      "launch_mass_kg": 4725,
+      "dry_mass_kg": 1972,
+      "power_operational_kW": 8.6,
+      "power_bol_kW": 10.0,
+      "initial_orbital_slot_deg_w": -62.0,
+      "final_operational_slot_deg_w": 50.0,
+      "status": "Operational (Inclined Orbit, End of Life)",
+      "deorbited_date": null,
+      "disposal_method": "N/A (No MEV servicing, likely in controlled retirement orbit)",
+      "designed_lifespan_years": 13,
+      "life_extension": null
+    },
+    "payload": {
+      "transponders": {
+        "C-band": 44,
+        "Ku-band": 12
+      },
+      "bandwidth_MHz": [
+        36,
+        72
+      ],
+      "EIRP_dBW": {
+        "C_global_beam": ">31.0 (EOC)",
+        "C_hemi_beam": ">35.1 (EOC)",
+        "C_zone_beam": ">35.1 (EOC)",
+        "Ku_spot_beam_1": ">47.0 (EOC)",
+        "Ku_spot_beam_2": ">47.0 (EOC)"
+      },
+      "G_T_dB_per_K": {
+        "C_global_beam": "-11.2 to -6.1",
+        "C_hemi_beam": "-7.4 to +4.6",
+        "C_zone_beam": "-7.4 to +4.6",
+        "Ku_spot_beam_1": "Up to +9.0",
+        "Ku_spot_beam_2": "Up to +8.9"
+      },
+      "polarization": {
+        "C-band": "Circular (RHCP/LHCP)",
+        "Ku-band": "Linear (Horizontal/Vertical)"
+      },
+      "frequency_bands_ghz": {
+        "C-band_downlink": "3.625-4.200",
+        "C-band_uplink": "5.850-6.425",
+        "Ku-band_downlink": "10.95-11.70",
+        "Ku-band_uplink": "14.00-14.50"
+      }
+    },
+    "geometry": {
+      "bus": {
+        "width_m": 3.5,
+        "height_m": 5.6,
+        "depth_m": 2.8
+      },
+      "solar_panels": [
+        {
+          "name": "North Solar Panel",
+          "width_m": 3.0,
+          "length_m": 15.0,
+          "position_m": [
+            0.0,
+            0.0,
+            9.7
+          ],
+          "orientation": "east"
+        },
+        {
+          "name": "South Solar Panel",
+          "width_m": 3.0,
+          "length_m": 15.0,
+          "position_m": [
+            0.0,
+            0.0,
+            -9.7
+          ],
+          "orientation": "west"
+        }
+      ],
+      "antennas": [
+        {
+          "name": "East Antenna",
+          "type": "dish",
+          "band": "C",
+          "radius_m": 1.25,
+          "depth_m": 0.5,
+          "orientation": "east",
+          "tilt_deg": 90,
+          "position_m": [
+            3.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "West Antenna",
+          "type": "dish",
+          "band": "Ku",
+          "radius_m": 1.0,
+          "depth_m": 0.4,
+          "orientation": "west",
+          "tilt_deg": 90,
+          "position_m": [
+            -3.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "Top Antenna",
+          "type": "sphere",
+          "band": "TT&C",
+          "radius_m": 0.3,
+          "position_m": [
+            0.0,
+            3.1,
+            0.0
+          ]
+        }
+      ],
+      "thrusters": [
+        {
+          "name": "North Thruster",
+          "type": "cylinder",
+          "radius_m": 0.1,
+          "height_m": 0.5,
+          "orientation": "north",
+          "position_m": [
+            0.0,
+            -2.0,
+            1.5
+          ]
+        },
+        {
+          "name": "South Thruster",
+          "type": "cylinder",
+          "radius_m": 0.1,
+          "height_m": 0.5,
+          "orientation": "south",
+          "position_m": [
+            0.0,
+            -2.0,
+            -1.5
+          ]
+        },
+        {
+          "name": "East Thruster",
+          "type": "cylinder",
+          "radius_m": 0.1,
+          "height_m": 0.5,
+          "orientation": "east",
+          "position_m": [
+            1.75,
+            2.0,
+            0.0
+          ]
+        },
+        {
+          "name": "West Thruster",
+          "type": "cylinder",
+          "radius_m": 0.1,
+          "height_m": 0.5,
+          "orientation": "west",
+          "position_m": [
+            -1.75,
+            -2.5,
+            0.0
+          ]
+        },
+        {
+          "name": "Main Engine",
+          "type": "cone",
+          "radius_top_m": 0.2,
+          "radius_bottom_m": 0.5,
+          "height_m": 1.0,
+          "orientation": "down",
+          "position_m": [
+            0.0,
+            -3.3,
+            0.0
+          ]
+        }
+      ]
+    }
+  }
+}
