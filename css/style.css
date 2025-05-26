@@ -1,4 +1,4 @@
-/* General Body and Canvas Styles */
+/* Minimal inline styles, if any, specific to HTML structure before CSS loads */
 body {
   margin: 0;
   overflow: hidden;
@@ -9,6 +9,36 @@ body {
 
 canvas {
   display: block; /* Default for the main 3D canvas */
+}
+
+.label {
+  color: #fff;
+  font-size: 12px;
+  text-shadow: 0 0 5px #000;
+  pointer-events: none;
+  white-space: nowrap
+}
+
+#controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, .6);
+  color: #fff;
+  font: 13px/1.4 sans-serif;
+  padding: 10px 14px;
+  border-radius: 6px;
+  user-select: none
+}
+
+#controls label {
+  display: block;
+  margin-bottom: 6px;
+  cursor: pointer
+}
+
+#controls input[type=range] {
+  width: 120px
 }
 
 /* Menu Toggle Button */
@@ -207,8 +237,6 @@ canvas {
   position: relative;
   width: 100%; /* Takes full width of its parent (#mercatorContainer) */
   height: 100%; /* Takes full height of its parent */
-  /* background property will be set by JS attempting to load from GitHub */
-  /* CSS fallback is applied via .fallback-css class if JS determines remote map texture fails */
   background-color: #2a2a2a; /* Default background if no image loads */
   background-repeat: no-repeat;
   background-size: 100% 100%; /* Ensure it covers the area */
@@ -222,10 +250,9 @@ canvas {
   height: 100%;
 }
 
-/* Fallback class applied by JS if remote image load fails for Mercator background */
-.mapBackground.fallback-css { /* This class is added by JS if GitHub image fails */
+.mapBackground.fallback-css {
   background: #333 url('https://placehold.co/400x200/222222/ffffff?text=Map+Load+Error') no-repeat center center !important;
-  background-size: contain !important; /* Use contain for placeholders to see text */
+  background-size: contain !important;
 }
 
 #mercatorContainer.fullscreen .mapBackground.fallback-css {
@@ -233,4 +260,20 @@ canvas {
   background-size: contain !important;
 }
 
+/* Styles for 3D Overlay Labels (ECEF Axes, North Pole, Equator, Meridian) */
+/* IMPORTANT: Move these to your css/style.css file on GitHub */
+.axis-label {
+  position: absolute;
+  color: #00ff00; /* Green to match axes and lines */
+  font-size: 12px;
+  font-family: monospace;
+  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+  padding: 2px 5px;
+  border-radius: 3px;
+  pointer-events: none; /* So they don't interfere with mouse controls */
+  transform: translate(-50%, -100%); /* Position top-center of the point */
+  white-space: nowrap;
+  display: none; /* Hidden by default, JS will manage visibility */
+  z-index: 10; /* Ensure they are above the 3D canvas but below UI controls */
+}
 
