@@ -4,244 +4,8 @@
     <meta charset="UTF-8">
     <title>Satellite Simulation - HTML Controls</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/arcazj/openbexi_earth_orbit/master/css/style.css">
-    <style>
-        /* Minimal inline styles, if any, specific to HTML structure before CSS loads */
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-            background-color: #000;
-            color: #fff;
-        }
-
-        canvas {
-            display: block; /* Default for the main 3D canvas */
-        }
-
-        /* Menu Toggle Button */
-        #menuToggleBtn {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 1001; /* Above controls container */
-            background-color: rgba(50, 50, 50, 0.8);
-            color: white;
-            border: 1px solid #666;
-            border-radius: 5px;
-            padding: 8px 12px;
-            cursor: pointer;
-            font-size: 18px;
-            line-height: 1;
-            transition: left 0.3s ease-in-out;
-        }
-
-        /* Controls Container (Menu Panel) */
-        #controlsContainer {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background-color: rgba(40, 40, 40, 0.9);
-            padding: 15px;
-            border-radius: 8px;
-            width: 280px;
-            max-height: calc(100vh - 20px);
-            overflow-y: auto;
-            z-index: 1000;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-            transition: transform 0.3s ease-in-out;
-            transform: translateX(0%); /* Initially visible */
-        }
-
-        #controlsContainer.menu-hidden {
-            transform: translateX(calc(-100% - 20px)); /* Slide out completely */
-        }
-
-        /* Version Display within Menu */
-        #versionDisplay {
-            color: #888;
-            font-size: 12px;
-            text-align: center;
-            padding: 5px 0 10px 0;
-            border-bottom: 1px solid #555;
-            margin-bottom: 10px;
-            word-wrap: break-word; /* Ensure long links don't break layout */
-        }
-
-        #versionDisplay a {
-            color: #00aaff; /* Link color */
-            text-decoration: none;
-        }
-
-        #versionDisplay a:hover {
-            text-decoration: underline;
-        }
-
-        /* Control Groups within Menu */
-        .control-group {
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #555;
-        }
-
-        .control-group:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        /* Collapsible Section Headers (H3) */
-        #controlsContainer h3 {
-            color: #00aaff;
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #controlsContainer h3 .toggle-icon {
-            font-size: 12px;
-            margin-left: 8px;
-            transition: transform 0.2s ease-in-out;
-        }
-
-        #controlsContainer h3 .toggle-icon.collapsed {
-            transform: rotate(-90deg);
-        }
-
-        /* Collapsible Content Styling */
-        .collapsible-content {
-            max-height: 500px; /* Large enough to show content */
-            overflow: hidden;
-            transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out, margin 0.3s ease-in-out;
-        }
-
-        .collapsible-content.collapsed {
-            max-height: 0;
-            padding-top: 0 !important; /* Ensure padding collapses */
-            padding-bottom: 0 !important;
-            margin-top: -10px; /* Adjust to pull up following element */
-            border-top: none; /* Hide border if any was applied when open */
-        }
-
-
-        /* Labels for Controls */
-        #controlsContainer label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            font-size: 13px;
-            color: #ccc;
-        }
-
-        /* Select Dropdowns */
-        #controlsContainer select {
-            width: 100%;
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #555;
-            background-color: #333;
-            color: #fff;
-            font-size: 13px;
-            box-sizing: border-box; /* Include padding and border in the element's total width and height */
-        }
-
-        /* Checkboxes */
-        #controlsContainer input[type="checkbox"] {
-            margin-right: 5px;
-            vertical-align: middle;
-        }
-
-        #controlsContainer .checkbox-label { /* Label next to a checkbox */
-            display: inline-block;
-            vertical-align: middle;
-            font-weight: normal;
-            color: #eee;
-            cursor: pointer; /* Make the text label clickable for the checkbox */
-        }
-
-        /* Satellite Info Panel */
-        #satelliteInfo {
-            margin-top: 10px;
-            color: #fff;
-            font-family: monospace;
-            background-color: #222;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 11px;
-            white-space: pre-wrap; /* Preserve whitespace and newlines */
-            border: 1px solid #444;
-            max-height: 200px; /* Limit height and enable scroll if needed */
-            overflow-y: auto;
-        }
-
-        /* Satellite Count Display */
-        #satelliteCountDisplay {
-            font-size: 13px;
-            color: #00aaff;
-            font-weight: bold;
-        }
-
-        /* Mercator Map Styling */
-        #mercatorContainer {
-            position: absolute;
-            display: none; /* Hidden by default, JS controls visibility */
-            pointer-events: auto; /* Allow interaction if needed for future features like map panning */
-            border: 1px solid #555;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-            /* Default to corner position */
-            top: 10px;
-            right: 10px;
-            width: 400px;
-            height: 200px;
-            background-color: #111; /* Fallback if background image fails */
-        }
-
-        #mercatorContainer.fullscreen {
-            top: 0;
-            left: 0;
-            right: auto; /* Override right positioning for fullscreen */
-            width: 100vw;
-            height: 100vh;
-            border: none; /* No border in fullscreen */
-            box-shadow: none; /* No shadow in fullscreen */
-            z-index: 900; /* Below controls but above 3D canvas if it were visible */
-        }
-
-        .mapBackground {
-            position: relative;
-            width: 100%; /* Takes full width of its parent (#mercatorContainer) */
-            height: 100%; /* Takes full height of its parent */
-            /* background property will be set by JS attempting to load from GitHub */
-            /* CSS fallback is applied via .fallback-css class if JS determines remote map texture fails */
-            background-color: #2a2a2a; /* Default background if no image loads */
-            background-repeat: no-repeat;
-            background-size: 100% 100%; /* Ensure it covers the area */
-        }
-
-        #mercatorCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Fallback class applied by JS if remote image load fails for Mercator background */
-        .mapBackground.fallback-css { /* This class is added by JS if GitHub image fails */
-            background: #333 url('https://placehold.co/400x200/222222/ffffff?text=Map+Load+Error') no-repeat center center !important;
-            background-size: contain !important; /* Use contain for placeholders to see text */
-        }
-
-        #mercatorContainer.fullscreen .mapBackground.fallback-css {
-            background: #333 url('https://placehold.co/1920x1080/222222/ffffff?text=Map+Load+Error+Fullscreen') no-repeat center center !important;
-            background-size: contain !important;
-        }
-
-    </style>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/satellite.js@4.0.0/dist/satellite.min.js"></script>
     <script type="importmap">
         {
@@ -254,83 +18,47 @@
 </head>
 <body>
 <button id="menuToggleBtn">✕</button>
-<div id="controlsContainer">
-    <div id="versionDisplay"></div>
-    <div class="control-group">
-        <h3 data-collapsible-target="filtersContent">Filters <span class="toggle-icon">▾</span></h3>
-        <div id="filtersContent" class="collapsible-content">
-            <label for="orbitTypeFilter">Orbit Type:</label>
-            <select id="orbitTypeFilter">
-                <option value="ALL">ALL</option>
-                <option value="LEO">LEO</option>
-                <option value="MEO">MEO</option>
-                <option value="GEO">GEO</option>
-            </select>
-
-            <label for="companyFilter">Company:</label>
-            <select id="companyFilter">
-                <option value="ALL COMPANY">ALL COMPANY</option>
-            </select>
-
-            <p>Satellites Found: <span id="satelliteCountDisplay">0</span></p>
-        </div>
-    </div>
-
-    <div class="control-group">
-        <h3 data-collapsible-target="viewContent">View <span class="toggle-icon">▾</span></h3>
-        <div id="viewContent" class="collapsible-content">
-            <input type="checkbox" id="view3DToggle" checked>
-            <label for="view3DToggle" class="checkbox-label">3D Globe</label>
-            <br>
-            <input type="checkbox" id="viewMercatorToggle">
-            <label for="viewMercatorToggle" class="checkbox-label">2D Mercator</label>
-            <br>
-            <input type="checkbox" id="highDefToggle">
-            <label for="highDefToggle" class="checkbox-label">High Definition</label>
-        </div>
-    </div>
-
-    <div class="control-group">
-        <h3 data-collapsible-target="orbitExtrasContent">Orbit/Extras <span class="toggle-icon">▾</span></h3>
-        <div id="orbitExtrasContent" class="collapsible-content">
-            <input type="checkbox" id="showOrbitToggle">
-            <label for="showOrbitToggle" class="checkbox-label">Show Orbit</label>
-        </div>
-    </div>
-
-    <div class="control-group">
-        <h3>Satellite Selection</h3>
-        <div>
-            <label for="satelliteSelect">Select Satellite:</label>
-            <select id="satelliteSelect">
-                <option value="None">None</option>
-            </select>
-            <div id="satelliteInfo">
-                <div style="font-weight:bold;">No satellite selected</div>
-            </div>
-        </div>
-    </div>
-</div>
-
+<div id="ob_menu"></div>
 <div id="mercatorContainer">
     <div class="mapBackground">
         <canvas id="mercatorCanvas"></canvas>
     </div>
 </div>
 
+<div id="labelXecr" class="axis-label">X<sub>ecr</sub></div>
+<div id="labelYecr" class="axis-label">Y<sub>ecr</sub></div>
+<div id="labelZecr" class="axis-label">Z<sub>ecr</sub></div>
+<div id="labelNorthPole" class="axis-label">North Pole</div>
+<div id="labelEquatorLine" class="axis-label">Equator Line</div>
+<div id="labelGreenwichMeridian" class="axis-label">Greenwich Meridian Line:</div>
+
+
 <script type="module">
-    import * as THREE from 'three';
-    import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 
-    const versionNumber = "1.0e";
-    const versionRepoUrl = "https://github.com/arcazj/openbexi_earth_orbit";
-    const versionText = `version ${versionNumber} - hosted at`;
-
-    // Base URLs - these will be updated if GitHub fetch fails
     let GITHUB_REPO_RAW_BASE_URL = "https://raw.githubusercontent.com/arcazj/openbexi_earth_orbit/master/";
     let CONFIG_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "config/";
     let TLE_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "json/tle/";
-    let usingLocalAssets = false; // Flag to indicate if we've switched to local assets
+    let SATELLITES_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "json/satellites/"; // Used by satelliteModelLoader.js as well
+    window.SATELLITE_MODELS_BASE_URL = SATELLITES_BASE_URL; // Make it available for satelliteModelLoader
+
+    const EARTH_RADIUS_KM = 6371; // Actual Earth radius
+    const EARTH_SCENE_RADIUS = 10; // Earth radius in Three.js scene units
+    const KM_TO_SCENE_UNITS = EARTH_SCENE_RADIUS / EARTH_RADIUS_KM;
+    window.KM_TO_SCENE_UNITS = KM_TO_SCENE_UNITS; // Make it available globally if needed by other scripts
+    window.METERS_TO_SCENE_UNITS = KM_TO_SCENE_UNITS * 1000;
+
+    import * as THREE from 'three';
+    import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+    import {updateSatelliteInfo, satelliteLoadMenu} from './js/SatelliteLoadMenu.js';
+    import { showSatellite, clearCurrentDetailedSat } from './js/satelliteModelLoader.js';
+
+    // Load menu
+    const versionNumber = "1.0g"; // Updated version
+    const versionRepoUrl = "https://github.com/arcazj/openbexi_earth_orbit";
+    const versionText = `version ${versionNumber} - hosted at`;
+    document.getElementById('ob_menu').innerHTML = satelliteLoadMenu();
+
+    let usingLocalAssets = false;
 
     let scene, camera, renderer, earthMesh, controls;
     let earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig;
@@ -338,51 +66,52 @@
     let mercatorCtx, mapWidth = 400, mapHeight = 200;
     let satellites = [];
     let orbitLine = null;
-    let currentSelectedSatellite = null;
+    let currentSelectedSatellite = null; // This will store the TLE data object for the selected satellite
     let textureLoader;
     let mercatorSatIcon = new Image();
     let mercatorSatIconLoaded = false;
+    let ecefXAxisHelper, ecefYAxisHelper, ecefZAxisHelper;
+    let equatorLineMesh, greenwichMeridianLineMesh;
+    let detailedSatelliteModel = null; // This will store the THREE.Group from satelliteModelLoader
 
     const simParams = {
         orbitTypeFilter: "MEO",
         companyFilter: "ALL COMPANY",
-        selectedSatellite: "None",
+        selectedSatelliteName: "None", // Stores the name/ID from the dropdown
         showOrbit: false,
         view3D: true,
         viewMercator: false,
-        useHighDefTexture: false
+        useHighDefTexture: false,
+        showECEFAxes: false
     };
 
     let orbitTypeFilterSelect, companyFilterSelect, satelliteCountDisplay;
-    let view3DToggle, viewMercatorToggle, showOrbitToggle, highDefToggleElement;
+    let view3DToggle, viewMercatorToggle, showOrbitToggle, highDefToggleElement, showECEFAxesToggleElement;
     let satelliteSelectDropdown, satelliteInfoDiv;
     let mercatorContainer, mercatorCanvasElement, mapBackgroundDiv;
     let controlsContainerElement, menuToggleBtnElement, versionDisplayElement;
+    let labelXecrDiv, labelYecrDiv, labelZecrDiv, labelNorthPoleDiv, labelEquatorLineDiv, labelGreenwichMeridianDiv;
 
-    function getFullGitHubUrl(relativePath) {
-        if (!relativePath || typeof relativePath !== 'string') {
-            console.warn("getFullGitHubUrl: received invalid path:", relativePath);
-            return usingLocalAssets ? relativePath.replace(/^\//, '') : null;
-        }
-        if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
-            return relativePath;
-        }
-        if (usingLocalAssets) {
-            return relativePath.replace(/^\//, '');
-        }
-        return GITHUB_REPO_RAW_BASE_URL + relativePath.replace(/^\//, '');
+    function getFullGitHubUrl(rel) {
+        if (!rel || typeof rel !== 'string') return usingLocalAssets ? rel.replace(/^\//, '') : null;
+        if (rel.startsWith('http')) return rel;
+        return (usingLocalAssets ? '' : GITHUB_REPO_RAW_BASE_URL) + rel.replace(/^\//, '');
     }
 
-    function fetchJSON(url) {
-        return fetch(url).then(resp => {
-            if (!resp.ok) throw new Error(`Failed to load ${url}: ${resp.statusText} (Status: ${resp.status})`);
-            return resp.json();
-        }).catch(error => {
-            console.error(`Error fetching JSON from ${url}:`, error.message); // Log only message for brevity
-            if (url.includes('/tle/')) return [];
-            return {};
-        });
+    window.getFullGitHubUrl = getFullGitHubUrl;
+
+    async function fetchJSON(url) {
+        try {
+            const r = await fetch(url);
+            if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+            return await r.json();
+        } catch (err) {
+            //console.error('[fetchJSON]', url, err);
+            return url.includes('/tle/') ? [] : {};
+        }
     }
+
+    window.fetchJSON = fetchJSON; // Make it available for satelliteModelLoader
 
     function isMobileDevice() {
         return /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(navigator.userAgent || navigator.vendor || window.opera);
@@ -408,13 +137,13 @@
             primaryLoadSuccess = true;
 
         } catch (githubError) {
-            console.warn("GitHub configuration load failed:", githubError.message, "Attempting local fallback.");
+            //console.warn("GitHub configuration load failed:", githubError.message, "Attempting local fallback.");
             usingLocalAssets = true;
-            GITHUB_REPO_RAW_BASE_URL = "";
+            GITHUB_REPO_RAW_BASE_URL = ""; // Clear the base URL to use relative paths
             CONFIG_BASE_URL = "config/";
             TLE_BASE_URL = "json/tle/";
-
-            // alert("Failed to load configurations from GitHub. Attempting to load from local paths..."); // User feedback
+            SATELLITES_BASE_URL = "json/satellites/"; // Local path for satellite models
+            window.SATELLITE_MODELS_BASE_URL = SATELLITES_BASE_URL; // Update for loader
 
             try {
                 const results = await Promise.all([
@@ -430,36 +159,57 @@
                     throw new Error("Local config load also resulted in empty critical config.");
                 }
                 console.log("Configurations loaded successfully from local fallback.");
-                primaryLoadSuccess = true; // Local load was successful
+                primaryLoadSuccess = true;
             } catch (localError) {
-                console.error("Both GitHub and local configuration loads failed:", localError.message, "Using hardcoded fallbacks.");
-                // Hardcoded fallbacks are applied below if primaryLoadSuccess is still false
+                //console.error("Both GitHub and local configuration loads failed:", localError.message, "Using hardcoded fallbacks.");
             }
         }
 
-        if (!primaryLoadSuccess) { // If both GitHub and local attempts failed
-            earthConfig = { diameter: 12742, texture: 'textures/1_earth_16k.jpg', textureLight: 'textures/earthmap1k_light.jpg' };
-            satelliteConfig = { icon: 'icons/ob_satellite.png', scale: [0.1, 0.1, 0.1], mercatorIcon: 'icons/ob_satellite.png' };
-            sceneConfig = { camera: {fov: 45, near: 0.1, far: 1000, position: [0,0,30]}, ambientLight: {color:0xffffff, intensity:0.5}, directionalLight: {color:0xffffff, intensity:1, position:[5,3,5]}};
+        if (!primaryLoadSuccess) {
+            // Hardcoded fallbacks (ensure these paths are valid or use placeholders)
+            earthConfig = {
+                diameter: EARTH_RADIUS_KM * 2,
+                texture: 'textures/1_earth_16k.jpg', // Placeholder if path invalid
+                textureLight: 'textures/earthmap1k_light.jpg' // Placeholder if path invalid
+            };
+            satelliteConfig = {
+                icon: 'icons/ob_satellite.png', // Placeholder if path invalid
+                scale: [0.1, 0.1, 0.1],
+                mercatorIcon: 'icons/ob_satellite.png' // Placeholder if path invalid
+            };
+            sceneConfig = {
+                camera: {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]},
+                ambientLight: {color: 0xffffff, intensity: 0.5},
+                directionalLight: {color: 0xffffff, intensity: 1, position: [5, 3, 5]}
+            };
             controlsConfig = {enableDamping: true, dampingFactor: 0.05};
-            constantsConfig = {};
-            alert("Error loading configurations from all sources. Using default settings. App functionality may be limited.");
+            constantsConfig = {}; // Should be fine as empty
+            // Potentially show a user-facing error message here
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = "position:fixed; top:10px; left:10px; padding:10px; background:red; color:white; z-index:1000;";
+            errorDiv.innerText = "Error loading configurations. Using default settings. App functionality may be limited.";
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
         }
 
-        // Ensure defaults for critical properties after attempting loads
-        earthConfig.diameter = earthConfig.diameter || 12742;
+        // Ensure defaults for critical configs if still missing after load attempts
+        earthConfig.diameter = earthConfig.diameter || EARTH_RADIUS_KM * 2;
         earthConfig.texture = earthConfig.texture || 'textures/1_earth_16k.jpg';
         earthConfig.textureLight = earthConfig.textureLight || 'textures/earthmap1k_light.jpg';
         satelliteConfig.icon = satelliteConfig.icon || 'icons/ob_satellite.png';
         satelliteConfig.scale = satelliteConfig.scale || [0.1, 0.1, 0.1];
         satelliteConfig.mercatorIcon = satelliteConfig.mercatorIcon || 'icons/ob_satellite.png';
-        sceneConfig.camera = sceneConfig.camera || {fov: 45, near: 0.1, far: 1000, position: [0,0,30]};
-        sceneConfig.ambientLight = sceneConfig.ambientLight || {color:0xffffff, intensity:0.5};
-        sceneConfig.directionalLight = sceneConfig.directionalLight || {color:0xffffff, intensity:1, position:[5,3,5]};
+        sceneConfig.camera = sceneConfig.camera || {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]};
+        sceneConfig.ambientLight = sceneConfig.ambientLight || {color: 0xffffff, intensity: 0.5};
+        sceneConfig.directionalLight = sceneConfig.directionalLight || {
+            color: 0xffffff,
+            intensity: 1,
+            position: [5, 3, 5]
+        };
         controlsConfig.enableDamping = controlsConfig.enableDamping !== undefined ? controlsConfig.enableDamping : true;
         controlsConfig.dampingFactor = controlsConfig.dampingFactor || 0.05;
 
-        globalScale = (earthConfig.diameter / 2) / 10;
+        globalScale = EARTH_SCENE_RADIUS / (earthConfig.diameter / 2);
     }
 
     function updateEarthTexture() {
@@ -473,9 +223,10 @@
         const textureToLoad = simParams.useHighDefTexture ? hdTextureFullUrl : lightTextureFullUrl;
 
         if (!textureToLoad) {
-            console.error("Earth Texture URL is null. Check config paths.");
-            earthMesh.material.map = null;
-            earthMesh.material.color.set(0x1a237e);
+            console.error("Earth Texture URL is null. Check config paths and getFullGitHubUrl logic.");
+            // Apply a very basic material if texture path is null
+            earthMesh.material.map = null; // Remove any existing map
+            earthMesh.material.color.set(0x1a237e); // A solid blue color
             earthMesh.material.needsUpdate = true;
             return;
         }
@@ -484,15 +235,16 @@
         textureLoader.load(textureToLoad,
             (texture) => {
                 earthMesh.material.map = texture;
-                earthMesh.material.color.set(0xffffff);
+                earthMesh.material.color.set(0xffffff); // Reset color if texture loads
                 earthMesh.material.needsUpdate = true;
                 console.log("Earth texture successfully updated to:", textureToLoad);
             },
-            undefined,
+            undefined, // onProgress callback (optional)
             (err) => {
-                console.error('Error loading Earth texture from:', textureToLoad, err, '. Using placeholder.');
-                const fallbackPlaceholder = `https://placehold.co/${simParams.useHighDefTexture ? '4096x2048' : '1024x512'}/1c313a/ffffff?text=Earth+Load+Error`;
-                textureLoader.load(fallbackPlaceholder, (fallbackMap) => {
+                //console.error('Error loading Earth texture from:', textureToLoad, err, '. Using placeholder.');
+                // Fallback to a placeholder image from placehold.co
+                const placeholderUrl = `https://placehold.co/${simParams.useHighDefTexture ? '4096x2048' : '1024x512'}/1c313a/ffffff?text=Earth+Texture+Load+Error`;
+                textureLoader.load(placeholderUrl, (fallbackMap) => {
                     earthMesh.material.map = fallbackMap;
                     earthMesh.material.needsUpdate = true;
                 });
@@ -500,14 +252,34 @@
         );
     }
 
+    function updateECEFAxesVisibility() {
+        const visible = simParams.showECEFAxes;
+        if (ecefXAxisHelper) ecefXAxisHelper.visible = visible;
+        if (ecefYAxisHelper) ecefYAxisHelper.visible = visible;
+        if (ecefZAxisHelper) ecefZAxisHelper.visible = visible;
+        if (equatorLineMesh) equatorLineMesh.visible = visible;
+        if (greenwichMeridianLineMesh) greenwichMeridianLineMesh.visible = visible;
+
+        // Labels
+        if (labelXecrDiv) labelXecrDiv.style.display = visible ? 'block' : 'none';
+        if (labelYecrDiv) labelYecrDiv.style.display = visible ? 'block' : 'none';
+        if (labelZecrDiv) labelZecrDiv.style.display = visible ? 'block' : 'none';
+        if (labelNorthPoleDiv) labelNorthPoleDiv.style.display = visible ? 'block' : 'none';
+        if (labelEquatorLineDiv) labelEquatorLineDiv.style.display = visible ? 'block' : 'none';
+        if (labelGreenwichMeridianDiv) labelGreenwichMeridianDiv.style.display = visible ? 'block' : 'none';
+    }
+
+
     function init3D() {
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(sceneConfig.camera.fov, window.innerWidth / window.innerHeight, sceneConfig.camera.near, sceneConfig.camera.far);
         camera.position.set(...sceneConfig.camera.position);
+
         renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
+        window.renderer = renderer; // Make renderer globally available for satelliteModelLoader
 
         scene.add(new THREE.AmbientLight(sceneConfig.ambientLight.color, sceneConfig.ambientLight.intensity));
         const dirLight = new THREE.DirectionalLight(sceneConfig.directionalLight.color, sceneConfig.directionalLight.intensity);
@@ -515,17 +287,67 @@
         scene.add(dirLight);
 
         textureLoader = new THREE.TextureLoader();
-        const earthMat = new THREE.MeshPhongMaterial({color: 0xffffff});
-        earthMesh = new THREE.Mesh(new THREE.SphereGeometry(10, 64, 64), earthMat);
+        const earthMat = new THREE.MeshPhongMaterial({color: 0xffffff}); // Start with white, texture will override
+        earthMesh = new THREE.Mesh(new THREE.SphereGeometry(EARTH_SCENE_RADIUS, 64, 64), earthMat);
         scene.add(earthMesh);
 
-        updateEarthTexture();
+        updateEarthTexture(); // Load initial texture
+
+        // ECEF Axes Helpers
+        const TARGET_AXIS_LENGTH_KM = 10000; // e.g., 10,000 km
+        const visualAxisExtentInSceneUnits = TARGET_AXIS_LENGTH_KM * KM_TO_SCENE_UNITS;
+        const headLength = visualAxisExtentInSceneUnits * 0.05; // Arrowhead 5% of total length
+        const headWidth = headLength * 0.4;   // Arrowhead width
+        // The ArrowHelper constructor takes the full length including the head.
+        // So, we pass visualAxisExtentInSceneUnits as the length.
+        const ecefAxisColor = 0x00ff00; // Green
+
+        // X-axis (points towards Greenwich Meridian in ECF)
+        ecefXAxisHelper = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), visualAxisExtentInSceneUnits, ecefAxisColor, headLength, headWidth);
+        scene.add(ecefXAxisHelper);
+
+        // Y-axis (ECF Y is 90 deg East of X in equatorial plane) - maps to Scene Z
+        ecefYAxisHelper = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), visualAxisExtentInSceneUnits, ecefAxisColor, headLength, headWidth);
+        scene.add(ecefYAxisHelper);
+
+        // Z-axis (points towards North Pole in ECF) - maps to Scene Y
+        ecefZAxisHelper = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), visualAxisExtentInSceneUnits, ecefAxisColor, headLength, headWidth);
+        scene.add(ecefZAxisHelper);
+
+
+        // Equator Line
+        const equatorRadius = EARTH_SCENE_RADIUS + 0.05; // Slightly above Earth's surface for visibility
+        const graticuleMaterial = new THREE.LineBasicMaterial({color: 0x00ff00}); // Green
+        const equatorGeometry = new THREE.BufferGeometry().setFromPoints(
+            new THREE.Path().absarc(0, 0, equatorRadius, 0, Math.PI * 2, false).getPoints(64)
+        );
+        equatorLineMesh = new THREE.Line(equatorGeometry, graticuleMaterial);
+        equatorLineMesh.rotation.x = Math.PI / 2; // Rotate to lie on the XY plane (Earth's equatorial plane)
+        equatorLineMesh.userData.radius = equatorRadius; // Store for label positioning
+        scene.add(equatorLineMesh);
+
+        // Greenwich Meridian Line (simplified as a half-circle in XZ plane in ECF, which is XY in scene)
+        const meridianPoints = [];
+        const meridianSegments = 32; // Number of segments for the half-circle
+        for (let i = 0; i <= meridianSegments; i++) {
+            const phi = (i / meridianSegments) * Math.PI; // Angle from 0 to PI for a half-circle
+            // For Greenwich meridian, it's in the ECF XZ plane (scene XY plane, Y pointing North)
+            // X = radius * cos(angle_from_Z_axis), Y = radius * sin(angle_from_Z_axis)
+            meridianPoints.push(new THREE.Vector3(Math.sin(phi) * equatorRadius, Math.cos(phi) * equatorRadius, 0));
+        }
+        const meridianGeometry = new THREE.BufferGeometry().setFromPoints(meridianPoints);
+        greenwichMeridianLineMesh = new THREE.Line(meridianGeometry, graticuleMaterial);
+        // No rotation needed if points are defined in the scene's XY plane correctly
+        scene.add(greenwichMeridianLineMesh);
+
+
+        updateECEFAxesVisibility(); // Set initial visibility based on simParams
 
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = controlsConfig.enableDamping;
         controls.dampingFactor = controlsConfig.dampingFactor;
-        controls.minDistance = 12;
-        controls.maxDistance = 100;
+        controls.minDistance = EARTH_SCENE_RADIUS * 1.2; // Prevent zooming inside Earth too much
+        controls.maxDistance = EARTH_SCENE_RADIUS * 10;  // Max zoom out
     }
 
     function initMercatorView() {
@@ -569,18 +391,23 @@
             mercatorSatIcon.onerror = () => {
                 console.error("Mercator satellite icon failed to load from:", mercatorIconFullUrl, ". Using placeholder.");
                 mercatorSatIcon.src = 'https://placehold.co/16x16/ffffff/000000?text=S';
-                mercatorSatIcon.onload = () => { mercatorSatIconLoaded = true; };
+                mercatorSatIcon.onload = () => {
+                    mercatorSatIconLoaded = true;
+                };
             };
             mercatorSatIcon.src = mercatorIconFullUrl;
         } else {
             console.error("Mercator satellite icon path is null. Using placeholder.");
             mercatorSatIcon.src = 'https://placehold.co/16x16/ffffff/000000?text=S';
-            mercatorSatIcon.onload = () => { mercatorSatIconLoaded = true; };
+            mercatorSatIcon.onload = () => {
+                mercatorSatIconLoaded = true;
+            };
         }
     }
 
+
     async function setupTLESatellites() {
-        console.log("Attempting to load TLE data from:", TLE_BASE_URL); // TLE_BASE_URL is now correctly local or remote
+        console.log("Attempting to load TLE data from:", TLE_BASE_URL);
         const primaryTleUrl = TLE_BASE_URL + 'TLE.json';
 
         try {
@@ -588,20 +415,28 @@
 
             if (!Array.isArray(tleData) || tleData.length === 0) {
                 console.warn(`TLE data from ${primaryTleUrl} failed or is empty.`);
-                if (usingLocalAssets) { // If already tried local and failed
-                    alert("Critical Error: Failed to load any satellite TLE data (local attempt also failed). Satellites will not be displayed.");
-                } else { // If GitHub attempt failed, now try local backup if specified (though loadConfigs should have switched TLE_BASE_URL)
-                    const backupTleUrl = (GITHUB_REPO_RAW_BASE_URL || "") + "json/tle/" + 'TLE_backup.json'; // Construct backup URL carefully
-                    console.log("Attempting backup TLE from:", backupTleUrl);
+                // If primary GitHub fails AND we are not already in local mode, try backup GitHub URL
+                if (!usingLocalAssets) {
+                    const backupTleUrl = GITHUB_REPO_RAW_BASE_URL + "json/tle/" + 'TLE_backup.json'; // Assuming backup is in the same base
+                    console.log("Attempting backup TLE from GitHub:", backupTleUrl);
                     tleData = await fetchJSON(backupTleUrl);
                     if (!Array.isArray(tleData) || tleData.length === 0) {
-                        alert("Critical Error: Failed to load any satellite TLE data from primary or backup. Satellites will not be displayed.");
+                        console.warn(`Backup TLE data from ${backupTleUrl} also failed or is empty.`);
                     } else {
-                        console.log("Loaded TLE data from backup source.");
+                        console.log("Loaded TLE data from GitHub backup source.");
                     }
                 }
+                // If still no data (either local failed, or both GitHub primary/backup failed)
                 if (!Array.isArray(tleData) || tleData.length === 0) {
-                    processSatellites([], null);
+                    const userMessage = "Critical Error: Failed to load satellite TLE data from all available sources. Satellites will not be displayed.";
+                    console.error(userMessage);
+                    // Display user-facing error
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.cssText = "position:fixed; top:10px; left:10px; padding:10px; background:red; color:white; z-index:1000;";
+                    errorDiv.innerText = userMessage;
+                    document.body.appendChild(errorDiv);
+                    // No need for setTimeout, this is a critical error.
+                    processSatellites([], null); // Process with empty data
                     return;
                 }
             }
@@ -610,18 +445,33 @@
             let satMaterial;
 
             if (!satIconFullUrl) {
-                console.error("3D Satellite icon path is null. Using placeholder material.");
-                satMaterial = new THREE.SpriteMaterial({
-                    map: textureLoader.load('https://placehold.co/32x32/ff0000/ffffff?text=S_ERR')
-                });
+                console.error("3D Satellite icon path is null (check satelliteConfig.icon). Using placeholder material.");
+                // Create a very simple placeholder material if texture path is null
+                const placeholderCanvas = document.createElement('canvas');
+                placeholderCanvas.width = 32;
+                placeholderCanvas.height = 32;
+                const ctx = placeholderCanvas.getContext('2d');
+                ctx.fillStyle = 'red';
+                ctx.fillRect(0, 0, 32, 32);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('S', 16, 16);
+                const placeholderTexture = new THREE.CanvasTexture(placeholderCanvas);
+                satMaterial = new THREE.SpriteMaterial({map: placeholderTexture});
             } else {
                 satMaterial = new THREE.SpriteMaterial({
-                    map: textureLoader.load(satIconFullUrl, undefined,
-                        () => { console.log("3D Satellite icon loaded from:", satIconFullUrl); },
-                        (err) => {
+                    map: textureLoader.load(satIconFullUrl,
+                        () => { /* onLoad */
+                            console.log("3D Satellite icon loaded from:", satIconFullUrl);
+                        },
+                        undefined, // onProgress
+                        (err) => { // onError
                             console.error('Error loading 3D satellite icon from:', satIconFullUrl, err, '. Using placeholder.');
-                            if (satMaterial) {
-                                satMaterial.map = textureLoader.load('https://placehold.co/32x32/ff0000/ffffff?text=S');
+                            if (satMaterial) { // Ensure satMaterial exists
+                                const errorPlaceholderUrl = 'https://placehold.co/32x32/ff0000/ffffff?text=S_ERR';
+                                satMaterial.map = textureLoader.load(errorPlaceholderUrl); // Load placeholder
                                 satMaterial.needsUpdate = true;
                             }
                         })
@@ -629,309 +479,894 @@
             }
             processSatellites(tleData, satMaterial);
 
-        } catch(err) {
-            console.error("Error in setupTLESatellites (fetching/processing):", err);
-            alert("Error setting up satellite data. Check console.");
-            processSatellites([], null);
+        } catch (err) {
+            console.error("Error in setupTLESatellites (fetching/processing TLEs):", err);
+            const userMessage = "Error setting up satellite data. Some satellites may not display correctly. Check console for details.";
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = "position:fixed; top:10px; left:10px; padding:10px; background:orange; color:black; z-index:1000;";
+            errorDiv.innerText = userMessage;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 7000);
+            processSatellites([], null); // Attempt to continue with empty data
         }
     }
 
+
     function processSatellites(tleData, baseMaterial) {
-        satellites.forEach(s => { if (s.mesh) scene.remove(s.mesh); });
-        satellites.length = 0;
+        // Clear existing satellites from scene and array
+        satellites.forEach(s => {
+            if (s.mesh) scene.remove(s.mesh);
+            // If s.label and s.label.element, handle removal if CSS2DObjects were used for sprites
+        });
+        satellites.length = 0; // Empty the array
 
         if (!tleData || tleData.length === 0) {
             console.warn("No TLE data to process.");
-            if (typeof updateSatelliteList === "function") updateSatelliteList();
+            if (typeof updateSatelliteList === "function") updateSatelliteList(); // Update UI
             return;
         }
         if (!baseMaterial) {
-            console.error("Base material for satellites is not available. Cannot create sprites.");
-            if (typeof updateSatelliteList === "function") updateSatelliteList();
+            console.error("Base material for satellites is not available. Cannot create satellite sprites.");
+            if (typeof updateSatelliteList === "function") updateSatelliteList(); // Update UI
             return;
         }
 
         tleData.forEach(item => {
             const {company, satellite_name, norad_id, type, launch_date, tle_line1, tle_line2} = item;
-            if (!tle_line1 || !tle_line2) { console.warn(`Skipping ${satellite_name || norad_id}: missing TLE lines.`); return; }
+            if (!tle_line1 || !tle_line2) {
+                console.warn(`Skipping satellite ${satellite_name || norad_id}: missing TLE line1 or line2.`);
+                return;
+            }
             try {
                 const satrec = satellite.twoline2satrec(tle_line1, tle_line2);
-                if (!satrec) throw new Error("Failed to parse TLE.");
+                // Check for common error: epoch year. satellite.js might parse ' yyddd...' as 19yy if yy > 56.
+                // Modern TLEs use 'yyddd...'. If satrec.epochyr < 2000 (and yy > 56), it's likely 20yy.
+                // This is a heuristic. satellite.js handles most cases, but good to be aware.
+                // No direct fix here, assuming satellite.js handles it.
 
-                const sprite = new THREE.Sprite(baseMaterial.clone());
+                if (!satrec) { // satellite.js returns false if TLE is fundamentally invalid
+                    throw new Error("Failed to parse TLE (twoline2satrec returned false).");
+                }
+
+
+                const sprite = new THREE.Sprite(baseMaterial.clone()); // Clone material for individual control if needed
                 sprite.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]));
                 scene.add(sprite);
+
                 satellites.push({
-                    mesh: sprite, satrec,
+                    mesh: sprite, // The THREE.Sprite object
+                    satrec: satrec, // The parsed TLE data from satellite.js
                     orbitType: type || "N/A",
                     company: company || "N/A",
-                    satellite_name: satellite_name || `NORAD ${norad_id}`,
-                    norad_id, launch_date, tle_line1, tle_line2
+                    satellite_name: satellite_name || `NORAD ${norad_id}`, // Use NORAD ID if name is missing
+                    norad_id: norad_id,
+                    launch_date: launch_date || "N/A",
+                    tle_line1: tle_line1,
+                    tle_line2: tle_line2,
+                    isSelected: false // Track selection state
                 });
-            } catch (e) { console.error(`Error processing TLE for ${satellite_name || norad_id}: ${e.message}.`); }
+            } catch (e) {
+                console.error(`Error processing TLE for ${satellite_name || norad_id} (NORAD: ${norad_id}): ${e.message}. TLE1: ${tle_line1}, TLE2: ${tle_line2}`);
+                // Optionally, skip adding this satellite or add it with an error state
+            }
         });
-        console.log(`${satellites.length} satellites processed.`);
-        if (typeof updateSatelliteList === "function") updateSatelliteList();
+        console.log(`${satellites.length} satellites processed and added to the scene.`);
+        if (typeof updateSatelliteList === "function") updateSatelliteList(); // Update UI elements
     }
+
 
     function setupHTMLControls() {
         controlsContainerElement = document.getElementById('controlsContainer');
         menuToggleBtnElement = document.getElementById('menuToggleBtn');
         versionDisplayElement = document.getElementById('versionDisplay');
 
-        if(versionDisplayElement) {
+        if (versionDisplayElement) {
             const versionLink = document.createElement('a');
             versionLink.href = versionRepoUrl;
             versionLink.textContent = `GitHub Repo`;
-            versionLink.target = "_blank";
+            versionLink.target = "_blank"; // Open in new tab
             versionDisplayElement.textContent = `${versionText} `;
             versionDisplayElement.appendChild(versionLink);
         }
 
+
         orbitTypeFilterSelect = document.getElementById('orbitTypeFilter');
         companyFilterSelect = document.getElementById('companyFilter');
         satelliteCountDisplay = document.getElementById('satelliteCountDisplay');
+
         view3DToggle = document.getElementById('view3DToggle');
         viewMercatorToggle = document.getElementById('viewMercatorToggle');
         highDefToggleElement = document.getElementById('highDefToggle');
+        showECEFAxesToggleElement = document.getElementById('showECEFAxesToggle');
         showOrbitToggle = document.getElementById('showOrbitToggle');
+
         satelliteSelectDropdown = document.getElementById('satelliteSelect');
         satelliteInfoDiv = document.getElementById('satelliteInfo');
 
+        // Axis labels
+        labelXecrDiv = document.getElementById('labelXecr');
+        labelYecrDiv = document.getElementById('labelYecr');
+        labelZecrDiv = document.getElementById('labelZecr');
+        labelNorthPoleDiv = document.getElementById('labelNorthPole');
+        labelEquatorLineDiv = document.getElementById('labelEquatorLine');
+        labelGreenwichMeridianDiv = document.getElementById('labelGreenwichMeridian');
+
+
+        // Set initial values from simParams
         orbitTypeFilterSelect.value = simParams.orbitTypeFilter;
         view3DToggle.checked = simParams.view3D;
         viewMercatorToggle.checked = simParams.viewMercator;
-        if(highDefToggleElement) highDefToggleElement.checked = simParams.useHighDefTexture;
+        if (highDefToggleElement) highDefToggleElement.checked = simParams.useHighDefTexture;
+        if (showECEFAxesToggleElement) showECEFAxesToggleElement.checked = simParams.showECEFAxes;
         showOrbitToggle.checked = simParams.showOrbit;
 
+        // Event Listeners
         orbitTypeFilterSelect.addEventListener('change', (e) => {
             simParams.orbitTypeFilter = e.target.value;
-            simParams.showOrbit = false; if(showOrbitToggle) showOrbitToggle.checked = false;
-            removeAllGeometry(); updateSatelliteList();
+            simParams.showOrbit = false; // Reset orbit display on filter change
+            if (showOrbitToggle) showOrbitToggle.checked = false;
+            removeAllGeometry(); // Clear orbit lines etc.
+            updateSatelliteList(); // Refilter and update display
         });
+
         companyFilterSelect.addEventListener('change', (e) => {
             simParams.companyFilter = e.target.value;
-            simParams.showOrbit = false; if(showOrbitToggle) showOrbitToggle.checked = false;
-            removeAllGeometry(); updateSatelliteList();
+            simParams.showOrbit = false; // Reset orbit display
+            if (showOrbitToggle) showOrbitToggle.checked = false;
+            removeAllGeometry();
+            updateSatelliteList();
         });
+
         view3DToggle.addEventListener('change', (e) => simParams.view3D = e.target.checked);
         viewMercatorToggle.addEventListener('change', (e) => simParams.viewMercator = e.target.checked);
 
-        if(highDefToggleElement) {
+        if (highDefToggleElement) {
             highDefToggleElement.addEventListener('change', (e) => {
                 simParams.useHighDefTexture = e.target.checked;
-                updateEarthTexture();
+                updateEarthTexture(); // Reload Earth texture
+            });
+        }
+        if (showECEFAxesToggleElement) {
+            showECEFAxesToggleElement.addEventListener('change', (e) => {
+                simParams.showECEFAxes = e.target.checked;
+                updateECEFAxesVisibility(); // Toggle axes and labels
             });
         }
 
+
         showOrbitToggle.addEventListener('change', (e) => {
             simParams.showOrbit = e.target.checked;
-            if (currentSelectedSatellite) updateOrbitTrajectory(currentSelectedSatellite);
-            else if (simParams.showOrbit) { simParams.showOrbit = false; e.target.checked = false; }
-        });
-        satelliteSelectDropdown.addEventListener('change', (e) => {
-            simParams.selectedSatellite = e.target.value;
-            const sat = satellites.find(s => s.satellite_name === e.target.value && s.mesh.visible);
-            selectSatellite(sat || null);
+            if (currentSelectedSatellite) { // Check if a satellite object is selected
+                updateOrbitTrajectory(currentSelectedSatellite); // Pass the satellite data object
+            } else if (simParams.showOrbit) {
+                // If showOrbit is checked but no satellite is selected, uncheck it
+                simParams.showOrbit = false;
+                e.target.checked = false;
+                // Optionally, inform the user to select a satellite first
+            }
         });
 
+        satelliteSelectDropdown.addEventListener('change', handleSatelliteDropdownChange);
+
+
+        // Collapsible sections
         document.querySelectorAll('#controlsContainer h3[data-collapsible-target]').forEach(header => {
             const targetId = header.dataset.collapsibleTarget;
             const targetContent = document.getElementById(targetId);
             const icon = header.querySelector('.toggle-icon');
+
             if (targetContent && icon) {
-                targetContent.classList.remove('collapsed'); icon.classList.remove('collapsed'); icon.textContent = '▾';
+                // Default to expanded
+                targetContent.classList.remove('collapsed');
+                icon.classList.remove('collapsed');
+                icon.textContent = '▾'; // Down arrow for expanded
+
                 header.addEventListener('click', () => {
-                    targetContent.classList.toggle('collapsed'); icon.classList.toggle('collapsed');
-                    icon.textContent = targetContent.classList.contains('collapsed') ? '▸' : '▾';
+                    targetContent.classList.toggle('collapsed');
+                    icon.classList.toggle('collapsed');
+                    icon.textContent = targetContent.classList.contains('collapsed') ? '▸' : '▾'; // Right for collapsed, Down for expanded
                 });
             }
         });
 
+        // Menu toggle button
         if (menuToggleBtnElement && controlsContainerElement) {
             menuToggleBtnElement.addEventListener('click', () => {
                 controlsContainerElement.classList.toggle('menu-hidden');
-                menuToggleBtnElement.innerHTML = controlsContainerElement.classList.contains('menu-hidden') ? '☰' : '✕';
+                menuToggleBtnElement.innerHTML = controlsContainerElement.classList.contains('menu-hidden') ? '☰' : '✕'; // Hamburger or X
             });
+            // Set initial state based on class (e.g., if 'menu-hidden' is default)
             menuToggleBtnElement.innerHTML = controlsContainerElement.classList.contains('menu-hidden') ? '☰' : '✕';
+        }
+    }
+
+    async function handleSatelliteDropdownChange(event) {
+        const selectedNameInDropdown = event.target.value; // This is satellite_name or "None"
+        simParams.selectedSatelliteName = selectedNameInDropdown;
+
+        // If a detailed model was previously shown, ensure its corresponding TLE sprite is made visible again.
+        if (detailedSatelliteModel && detailedSatelliteModel.userData && detailedSatelliteModel.userData.noradId) {
+            const prevTleSat = satellites.find(s => s.norad_id.toString() === detailedSatelliteModel.userData.noradId.toString());
+            if (prevTleSat && prevTleSat.mesh) {
+                prevTleSat.mesh.visible = true; // Make TLE sprite visible
+                prevTleSat.isSelected = false;
+                // Reset visual cues for the TLE sprite if any were changed
+                prevTleSat.mesh.material.color.set(0xffffff);
+                prevTleSat.mesh.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]));
+            }
+        }
+
+        clearDetailedSatelliteView(); // Clears current detailed model from scene
+        removeAllGeometry(); // Clears orbit lines
+
+        if (selectedNameInDropdown === "None") {
+            currentSelectedSatellite = null; // No TLE data object selected
+            updateSatelliteInfo(satelliteInfoDiv,null);
+            resetCameraToDefault();
+            // Ensure all TLE sprites are reset visually if needed (updateSatelliteList handles this based on currentSelectedSatellite)
+            updateSatelliteList(); // This will ensure correct visual state for sprites
+            return;
+        }
+
+        // Find the satellite data object from the `satellites` array by its name
+        const tleSatData = satellites.find(s => s.satellite_name === selectedNameInDropdown && s.mesh && s.mesh.visible);
+
+        if (!tleSatData) {
+            console.warn(`Satellite named "${selectedNameInDropdown}" not found or not visible in current filter.`);
+            currentSelectedSatellite = null;
+            updateSatelliteInfo(satelliteInfoDiv,null);
+            // Potentially reset dropdown to "None" if the selected satellite is no longer valid
+            if (satelliteSelectDropdown) satelliteSelectDropdown.value = "None";
+            simParams.selectedSatelliteName = "None";
+            return;
+        }
+
+        currentSelectedSatellite = tleSatData; // Store the actual satellite data object
+        updateSatelliteInfo(satelliteInfoDiv,tleSatData);
+        if (simParams.showOrbit) {
+            updateOrbitTrajectory(tleSatData);
+        }
+
+        // Attempt to load the detailed model
+        // The SATELLITES_BASE_URL is already configured (local or remote)
+        let fileUrl = (usingLocalAssets ? "json/satellites/" : SATELLITES_BASE_URL) + `${tleSatData.norad_id}.json`;
+
+        let fileExists = await checkFileExists(fileUrl);
+        if (!fileExists && !usingLocalAssets) { // If GitHub primary fails, try GitHub backup structure if one existed
+            // This example assumes SATELLITES_BASE_URL is the primary. If you have a distinct backup base, use it.
+            // For simplicity, we'll assume if primary SATELLITES_BASE_URL fails, we try local next if applicable.
+            console.warn(`Primary model file ${fileUrl} not found.`);
+        }
+
+
+        if (!fileExists && usingLocalAssets) { // If primary (which is local if usingLocalAssets) fails
+            console.warn(`Local model file ${fileUrl} not found.`);
+            // No other place to check if already local
+        } else if (!fileExists && !usingLocalAssets) { // If primary GitHub failed, now try local path as a general fallback
+            console.warn(`GitHub model file ${fileUrl} not found, attempting local fallback.`);
+            fileUrl = "json/satellites/" + `${tleSatData.norad_id}.json`; // Standard local path
+            fileExists = await checkFileExists(fileUrl);
+        }
+
+
+        if (fileExists) {
+            await loadAndDisplayDetailedSatellite(tleSatData.norad_id, tleSatData);
+        } else {
+            // If no specific model, try loading a generic/default model (e.g., noradId "0" or "default")
+            console.warn(`Satellite data file for NORAD ${tleSatData.norad_id} not found at any checked location. Attempting to load default model.`);
+            // Before loading default, ensure the selected TLE sprite is correctly highlighted
+            selectSatelliteSprite(tleSatData); // Visually select the TLE sprite
+            flyCameraToSatellite(tleSatData.mesh, 1000, true); // Fly to the TLE sprite
+
+            // Optionally, try to load a "default.json" or "0.json" if you have one
+            // For now, we just log and don't load a detailed model if specific one not found.
+            // await loadAndDisplayDetailedSatellite("0", null); // Pass null for tleData if it's a generic model
+        }
+    }
+
+
+    async function checkFileExists(url) {
+        try {
+            const response = await fetch(url, {method: 'HEAD'});
+            return response.ok;
+        } catch (error) {
+            // Network errors or CORS issues can cause fetch to reject
+            console.error('Error checking file existence (HEAD request failed):', url, error);
+            return false;
+        }
+    }
+
+    async function loadAndDisplayDetailedSatellite(noradId, tleSatData) {
+        console.log(`Attempting to load detailed model for NORAD ID: ${noradId}`);
+        const newModel = await showSatellite(noradId, scene);
+
+        if (newModel) {
+            detailedSatelliteModel = newModel; // Store the THREE.Group
+            detailedSatelliteModel.userData.noradId = noradId; // Ensure NORAD ID is stored on the model
+
+            if (tleSatData && tleSatData.satrec) {
+                currentSelectedSatellite = tleSatData; // This is the TLE data object
+                tleSatData.isSelected = true; // Mark TLE data as selected
+                if (tleSatData.mesh) {
+                    tleSatData.mesh.visible = false; // Hide the corresponding TLE sprite
+                }
+
+                // --- Set initial position of the detailed model ---
+                const now = new Date();
+                const jdayNow = satellite.jday(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+                const gmstNow = satellite.gstime(jdayNow);
+                try {
+                    const posVel = satellite.propagate(tleSatData.satrec, now);
+                    if (posVel && posVel.position) {
+                        const ecf = satellite.eciToEcf(posVel.position, gmstNow);
+                        detailedSatelliteModel.position.set(ecf.x * KM_TO_SCENE_UNITS, ecf.z * KM_TO_SCENE_UNITS, ecf.y * KM_TO_SCENE_UNITS);
+                        console.log(`[Detailed Model] Initial position set for ${noradId}:`, detailedSatelliteModel.position);
+                    } else {
+                        console.warn(`[Detailed Model] Propagation failed for initial position of ${noradId}. Model at origin.`);
+                    }
+                } catch (e) {
+                    console.error(`[Detailed Model] Error propagating TLE for initial position of ${noradId}:`, e);
+                }
+                // --- End set initial position ---
+
+            } else {
+                console.warn(`[Detailed Model] TLE data or satrec missing for NORAD ${noradId}. Model loaded at origin, cannot track orbit.`);
+                currentSelectedSatellite = null; // No TLE data to track
+            }
+
+            // Deselect other TLE sprites
+            satellites.forEach(s => {
+                if (s !== tleSatData && s.mesh) {
+                    s.isSelected = false;
+                    s.mesh.material.color.set(0xffffff); // Reset color
+                    s.mesh.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1])); // Reset scale
+                }
+            });
+
+            flyCameraToSatellite(detailedSatelliteModel, 1500, false); // Fly to the detailed model itself
+            if (simParams.showOrbit && currentSelectedSatellite) {
+                updateOrbitTrajectory(currentSelectedSatellite);
+            }
+
+        } else {
+            console.error("Failed to load detailed satellite model for NORAD ID:", noradId, "(showSatellite returned null)");
+            // Fallback: ensure the TLE sprite for this satellite is selected and camera flies to it.
+            if (tleSatData) {
+                selectSatelliteSprite(tleSatData); // Visually select the TLE sprite
+                if (tleSatData.mesh) flyCameraToSatellite(tleSatData.mesh, 1000, true); // Fly to the TLE sprite
+            } else {
+                if (satelliteSelectDropdown) satelliteSelectDropdown.value = "None";
+                simParams.selectedSatelliteName = "None";
+                currentSelectedSatellite = null;
+                resetCameraToDefault();
+            }
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = "position:fixed; top:10px; left:10px; padding:10px; background:orange; color:black; z-index:1000;";
+            errorDiv.innerText = `Failed to load 3D model for satellite NORAD ID: ${noradId}. Displaying TLE marker.`;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+    }
+
+    function clearDetailedSatelliteView() {
+        if (detailedSatelliteModel) {
+            const oldNoradId = detailedSatelliteModel.userData ? detailedSatelliteModel.userData.noradId : null;
+            clearCurrentDetailedSat(scene);
+            scene.remove(detailedSatelliteModel);
+            detailedSatelliteModel = null;
+
+            // If a TLE sprite was hidden for this detailed model, make it visible again
+            if (oldNoradId) {
+                const tleSat = satellites.find(s => s.norad_id.toString() === oldNoradId.toString());
+                if (tleSat && tleSat.mesh) {
+                    tleSat.mesh.visible = true;
+                    // Ensure its isSelected state is false if another sat isn't immediately selected
+                    // This is typically handled by updateSatelliteList or selection logic
+                }
+            }
+        }
+    }
+
+
+    const clock = new THREE.Clock();
+    let cameraMove = null;
+
+    /**
+     * Smooth flight from the current camera position to either a sprite or a
+     * detailed satellite model.  For models, we frame them at *least* the same
+     * distance used for sprites so the view is consistent.
+     *
+     * @param {THREE.Object3D} targetObject  The sprite or model to frame.
+     * @param {number} [millis=1500]         Flight duration in ms.
+     * @param {boolean} [isSprite=false]     Pass true when targetObject is a sprite.
+     */
+    /**
+     * Smooth flight from the current camera position to either a sprite or a
+     * detailed satellite model.  For models, we frame them at *least* the same
+     * distance used for sprites so the view is consistent.
+     *
+     * @param {THREE.Object3D} targetObject  The sprite or model to frame.
+     * @param {number} [millis=1500]         Flight duration in ms.
+     * @param {boolean} [isSprite=false]     Pass true when targetObject is a sprite.
+     */
+    function flyCameraToSatellite(targetObject, millis = 1500, isSprite = false) {
+        if (!targetObject || !camera || !controls) {
+            console.warn("flyCameraToSatellite: Missing target, camera, or controls.");
+            return;
+        }
+
+        const earthCenter = new THREE.Vector3(0, 0, 0);
+        const targetPos   = new THREE.Vector3().setFromMatrixPosition(targetObject.matrixWorld);
+        const dirToTarget = new THREE.Vector3().subVectors(targetPos, earthCenter).normalize();
+
+        let distance;
+
+        /* ---------- sprite path ---------- */
+        if (isSprite) {
+            distance = EARTH_SCENE_RADIUS * 0.5;          // fixed offset
+        }
+
+        /* ---------- detailed‑model path ---------- */
+        else {
+            // Estimate model diameter then back off ~3× that size
+            const bbox = new THREE.Box3().setFromObject(targetObject);
+            const size = new THREE.Vector3();
+            bbox.getSize(size);
+            const modelDiameter = Math.max(size.x, size.y, size.z, 0.5 * KM_TO_SCENE_UNITS * 1000);
+            distance = modelDiameter * 3;
+
+            // Make sure we never get *closer* than the sprite framing distance
+            distance = Math.max(distance, EARTH_SCENE_RADIUS * 0.5);
+        }
+
+        // Final camera position = target position + outward offset
+        const endCamPos = new THREE.Vector3().addVectors(
+            targetPos,
+            dirToTarget.clone().multiplyScalar(distance)
+        );
+
+        /* ---------- animation set‑up ---------- */
+        const startCamPos = camera.position.clone();
+        const startTarget = controls.target.clone();
+        const endTarget   = targetPos.clone();               // always look at the sat
+
+        cameraMove = {
+            startTime : clock.getElapsedTime(),
+            duration  : millis / 1000,
+            startCamPos,
+            endCamPos,
+            startTarget,
+            endTarget
+        };
+
+        controls.enabled = false; // re‑enabled when the flight completes
+    }
+
+
+    function resetCameraToDefault() {
+        if (camera && controls && sceneConfig && sceneConfig.camera && sceneConfig.camera.position) {
+            // Stop any ongoing camera flight
+            cameraMove = null;
+
+            const startCamPos = camera.position.clone();
+            const endCamPos = new THREE.Vector3(...sceneConfig.camera.position);
+            const startTarget = controls.target.clone();
+            const endTarget = new THREE.Vector3(0, 0, 0); // Look at Earth center
+
+            cameraMove = {
+                startTime: clock.getElapsedTime(),
+                duration: 1.0, // 1 second to reset
+                startCamPos, endCamPos,
+                startTarget, endTarget
+            };
+            controls.enabled = false; // Disable during animation, re-enable in animate loop
+        } else {
+            console.warn("Cannot reset camera: camera, controls, or sceneConfig not fully initialized.");
         }
     }
 
     function updateSatelliteList() {
         if (!satellites || !satelliteSelectDropdown || !companyFilterSelect) {
             console.warn("updateSatelliteList: DOM elements not ready or satellites not loaded.");
-            if(satelliteCountDisplay) satelliteCountDisplay.textContent = '0';
-            if(satelliteSelectDropdown) satelliteSelectDropdown.innerHTML = '<option value="None">None</option>';
-            if(companyFilterSelect) companyFilterSelect.innerHTML = '<option value="ALL COMPANY">ALL COMPANY</option>';
+            if (satelliteCountDisplay) satelliteCountDisplay.textContent = '0';
+            if (satelliteSelectDropdown) satelliteSelectDropdown.innerHTML = '<option value="None">None</option>';
+            if (companyFilterSelect) {
+                const currentCompanyVal = companyFilterSelect.value;
+                companyFilterSelect.innerHTML = '<option value="ALL COMPANY">ALL COMPANY</option>';
+                if (currentCompanyVal !== "ALL COMPANY") { // Try to preserve if it was specific
+                    const opt = document.createElement('option');
+                    opt.value = currentCompanyVal;
+                    opt.textContent = currentCompanyVal;
+                    companyFilterSelect.appendChild(opt);
+                    companyFilterSelect.value = currentCompanyVal;
+                }
+            }
             return;
         }
 
-        const filtered = satellites.filter(s =>
+        const filteredTLEs = satellites.filter(s =>
             (simParams.orbitTypeFilter === "ALL" || s.orbitType === simParams.orbitTypeFilter) &&
             (simParams.companyFilter === "ALL COMPANY" || s.company === simParams.companyFilter)
         );
+
+        // Update visibility of TLE sprites
         satellites.forEach(s => {
             if (s.mesh) {
-                const isVisible = filtered.includes(s);
-                s.mesh.visible = isVisible;
-                if (isVisible) {
-                    s.mesh.material.color.set(s.isSelected ? 0xff0000 : 0xffffff);
-                    s.mesh.scale.set(...(s.isSelected ? (satelliteConfig.scale || [0.1,0.1,0.1]).map(v => v * 1.5) : (satelliteConfig.scale || [0.1,0.1,0.1])));
+                const isVisibleInFilter = filteredTLEs.includes(s);
+                // A TLE sprite is visible if it's in the current filter AND
+                // (EITHER no detailed model is shown OR the detailed model shown is NOT this TLE sprite's satellite)
+                const isDetailedModelForThisSat = detailedSatelliteModel && detailedSatelliteModel.userData && detailedSatelliteModel.userData.noradId === s.norad_id.toString();
+                s.mesh.visible = isVisibleInFilter && !isDetailedModelForThisSat;
+
+                if (s.mesh.visible) { // Apply visual cues only if the sprite is visible
+                    const isActuallySelected = currentSelectedSatellite === s; // s is the TLE data object
+                    s.mesh.material.color.set(isActuallySelected ? 0xff0000 : 0xffffff); // Red if selected, white otherwise
+                    const baseScale = satelliteConfig.scale || [0.1, 0.1, 0.1];
+                    s.mesh.scale.set(...(isActuallySelected ? baseScale.map(v => v * 1.5) : baseScale));
                 }
             }
         });
-        if (currentSelectedSatellite && !filtered.includes(currentSelectedSatellite)) selectSatellite(null);
 
-        if(satelliteCountDisplay) satelliteCountDisplay.textContent = filtered.length;
 
+        if (satelliteCountDisplay) satelliteCountDisplay.textContent = filteredTLEs.length.toString();
+
+        // Repopulate company filter based on *all* satellites, not just filtered ones, to allow broader selection
         const uniqueCompanies = Array.from(new Set(satellites.map(s => s.company))).sort();
-        const currentCompanySelection = companyFilterSelect.value;
+        const currentCompanySelection = companyFilterSelect.value; // Preserve current selection if possible
         companyFilterSelect.innerHTML = '<option value="ALL COMPANY">ALL COMPANY</option>';
         uniqueCompanies.forEach(comp => {
-            if(comp) {
+            if (comp && comp !== "N/A") { // Filter out "N/A" or empty company names if desired
                 const option = document.createElement('option');
-                option.value = comp; option.textContent = comp;
+                option.value = comp;
+                option.textContent = comp;
                 companyFilterSelect.appendChild(option);
             }
         });
+        // Try to restore previous selection, or default to "ALL COMPANY"
         if (uniqueCompanies.includes(currentCompanySelection)) {
             companyFilterSelect.value = currentCompanySelection;
-        } else if (uniqueCompanies.length > 0 && simParams.companyFilter === "ALL COMPANY"){
-            companyFilterSelect.value = "ALL COMPANY";
-        } else if (uniqueCompanies.length > 0) {
-            companyFilterSelect.value = uniqueCompanies[0];
-            simParams.companyFilter = uniqueCompanies[0];
         } else {
-            companyFilterSelect.value = "ALL COMPANY";
-            simParams.companyFilter = "ALL COMPANY";
+            companyFilterSelect.value = "ALL COMPANY"; // Default if previous selection is no longer valid
+            // simParams.companyFilter = "ALL COMPANY"; // Also update simParams if it changed
         }
 
 
-        const currentDropdownValue = satelliteSelectDropdown.value;
+        // Repopulate satellite dropdown based on *filtered* TLEs
+        const currentDropdownValue = satelliteSelectDropdown.value; // Name of the satellite
         satelliteSelectDropdown.innerHTML = '<option value="None">None</option>';
-        filtered.forEach(s => {
+        filteredTLEs.forEach(s => {
             const option = document.createElement('option');
-            option.value = s.satellite_name; option.textContent = s.satellite_name;
+            option.value = s.satellite_name; // Value is the name
+            option.textContent = s.satellite_name;
             satelliteSelectDropdown.appendChild(option);
         });
 
-        if (filtered.some(s => s.satellite_name === currentDropdownValue)) {
+        // Try to restore selection in dropdown
+        if (filteredTLEs.some(s => s.satellite_name === currentDropdownValue)) {
             satelliteSelectDropdown.value = currentDropdownValue;
         } else {
+            // If the previously selected satellite is no longer in the filtered list
             satelliteSelectDropdown.value = "None";
-            if (simParams.selectedSatellite !== "None") selectSatellite(null);
+            simParams.selectedSatelliteName = "None";
+            if (currentSelectedSatellite && !filteredTLEs.includes(currentSelectedSatellite)) {
+                // If the actual selected object is no longer in filter, deselect it
+                clearDetailedSatelliteView(); // Clear detailed model if it was for this sat
+                selectSatelliteSprite(null); // Deselect TLE sprite
+                currentSelectedSatellite = null;
+                updateSatelliteInfo(satelliteInfoDiv,null);
+            }
         }
-        if (satelliteSelectDropdown.value === "None" && currentSelectedSatellite) selectSatellite(null);
+        // If dropdown is "None" but a detailed model is showing, ensure consistency
+        if (satelliteSelectDropdown.value === "None" && detailedSatelliteModel) {
+            // This case should ideally be handled by the logic that sets dropdown to "None"
+            // but as a safeguard:
+            clearDetailedSatelliteView();
+            currentSelectedSatellite = null;
+            updateSatelliteInfo(satelliteInfoDiv,null);
+        }
     }
 
-    function selectSatellite(sat) {
-        if (currentSelectedSatellite && currentSelectedSatellite.mesh) {
-            currentSelectedSatellite.isSelected = false;
-            if (currentSelectedSatellite.mesh.visible) {
-                currentSelectedSatellite.mesh.material.color.set(0xffffff);
-                currentSelectedSatellite.mesh.scale.set(...(satelliteConfig.scale || [0.1,0.1,0.1]));
+    // Selects the TLE sprite (visual changes)
+    function selectSatelliteSprite(tleSatData) {
+        // Deselect any previously selected TLE sprite
+        satellites.forEach(s => {
+            if (s.mesh && s.isSelected) {
+                s.isSelected = false;
+                if (s.mesh.visible) { // Only change if visible
+                    s.mesh.material.color.set(0xffffff);
+                    s.mesh.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]));
+                }
             }
-        }
-        currentSelectedSatellite = sat;
-        if (sat && sat.mesh) {
-            sat.isSelected = true;
-            if (sat.mesh.visible) {
-                sat.mesh.material.color.set(0xff0000);
-                sat.mesh.scale.set(...(satelliteConfig.scale || [0.1,0.1,0.1]).map(v => v * 1.5));
+        });
+
+        currentSelectedSatellite = tleSatData; // Store the TLE data object
+
+        if (tleSatData && tleSatData.mesh) {
+            tleSatData.isSelected = true;
+            if (tleSatData.mesh.visible) { // Only change if visible
+                tleSatData.mesh.material.color.set(0xff0000); // Red
+                tleSatData.mesh.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]).map(v => v * 1.5)); // Larger
             }
-            simParams.selectedSatellite = sat.satellite_name;
-            if(satelliteSelectDropdown) satelliteSelectDropdown.value = sat.satellite_name;
-            updateOrbitTrajectory(sat);
+            simParams.selectedSatelliteName = tleSatData.satellite_name;
+            if (satelliteSelectDropdown) satelliteSelectDropdown.value = tleSatData.satellite_name;
+            updateOrbitTrajectory(tleSatData);
         } else {
-            simParams.selectedSatellite = "None";
-            if(satelliteSelectDropdown) satelliteSelectDropdown.value = "None";
-            removeAllGeometry();
+            // Deselecting
+            simParams.selectedSatelliteName = "None";
+            if (satelliteSelectDropdown) satelliteSelectDropdown.value = "None";
+            removeAllGeometry(); // Clear orbit line
         }
-        updateSatelliteInfo(sat);
-    }
-
-    function updateSatelliteInfo(sat) {
-        if (!satelliteInfoDiv) return;
-        if (!sat) { satelliteInfoDiv.innerHTML = `<div style="font-weight:bold;">No satellite selected</div>`; return; }
-        satelliteInfoDiv.innerHTML = `
-    <div style="font-weight:bold; margin-bottom:3px; color: #00aaff;">Selected: ${sat.satellite_name}</div>
-    <div>Company: ${sat.company}</div><div>Type: ${sat.orbitType}</div>
-    <div>Launch: ${sat.launch_date || "N/A"}</div><div>NORAD: ${sat.norad_id}</div>
-    <div style="color:#aaa; margin-top:5px; font-size:10px;">TLE1: ${sat.tle_line1}</div>
-    <div style="color:#aaa; font-size:10px;">TLE2: ${sat.tle_line2}</div>`;
+        updateSatelliteInfo(satelliteInfoDiv,tleSatData); // Update text info panel
     }
 
     function removeAllGeometry() {
-        if (orbitLine) { scene.remove(orbitLine); orbitLine.geometry.dispose(); orbitLine.material.dispose(); orbitLine = null; }
+        if (orbitLine) {
+            scene.remove(orbitLine);
+            orbitLine.geometry.dispose();
+            orbitLine.material.dispose();
+            orbitLine = null;
+        }
+        // Add removal for other types of geometry if needed
     }
 
-    function updateOrbitTrajectory(satData) {
-        removeAllGeometry();
+    function updateOrbitTrajectory(satData) { // satData is the TLE object
+        removeAllGeometry(); // Clear existing orbit line
         if (!simParams.showOrbit || !satData || !satData.satrec) return;
-        const meanMotion = satData.satrec.no; if (meanMotion === 0) { console.warn(`${satData.satellite_name} has zero mean motion.`); return; }
-        const periodMins = 1440 / meanMotion;
-        const segments = 14400; const step = periodMins / segments;
-        const orbitPoints = []; const now = new Date();
-        for (let i = 0; i <= segments; i++) {
-            const future = new Date(now.getTime() + i * step * 60000);
-            const posVel = satellite.propagate(satData.satrec, future);
-            if (!posVel || !posVel.position) continue;
-            const { x, y, z } = posVel.position;
-            const kmToScene = 10 / 6371;
-            orbitPoints.push(new THREE.Vector3(x * kmToScene, z * kmToScene, y * kmToScene));
+
+        const meanMotion = satData.satrec.no; // Revolutions per day
+        if (meanMotion === 0) {
+            console.warn(`Satellite ${satData.satellite_name} (NORAD: ${satData.norad_id}) has zero mean motion (no). Cannot calculate orbit period.`);
+            return;
         }
-        if (orbitPoints.length < 2) { console.warn(`Not enough points for orbit: ${orbitPoints.length}`); return; }
+        const periodMins = (1 / meanMotion) * 24 * 60; // Orbital period in minutes
+        const segments = 360; // Number of points for the orbit line (e.g., one point per degree of orbit)
+        const timeStepMins = periodMins / segments; // Time step for each segment in minutes
+
+        const orbitPoints = [];
+        const now = new Date(); // Current time for propagation start
+
+        for (let i = 0; i <= segments; i++) {
+            const futureTime = new Date(now.getTime() + i * timeStepMins * 60000); // Time for this point in ms
+            try {
+                const posVel = satellite.propagate(satData.satrec, futureTime);
+                if (!posVel || !posVel.position) { // Check if propagation was successful
+                    console.warn(`Propagation failed for segment ${i} of ${satData.satellite_name}`);
+                    continue; // Skip this point
+                }
+                const {x, y, z} = posVel.position; // ECI coordinates in km
+                // Convert ECI to ECF for display aligned with Earth's rotation (if needed, or use ECI directly)
+                // For simplicity, TLE propagation is often visualized in ECI directly,
+                // but if Earth rotates, the orbit path relative to Earth surface changes.
+                // Here, we'll plot the ECI path in the inertial frame.
+                // If you need ECF path, you'd convert each point:
+                // const jdayFuture = satellite.jday(futureTime.getUTCFullYear(), ...);
+                // const gmstFuture = satellite.gstime(jdayFuture);
+                // const ecfPos = satellite.eciToEcf(posVel.position, gmstFuture);
+                // orbitPoints.push(new THREE.Vector3(ecfPos.x * KM_TO_SCENE_UNITS, ecfPos.z * KM_TO_SCENE_UNITS, ecfPos.y * KM_TO_SCENE_UNITS));
+                orbitPoints.push(new THREE.Vector3(x * KM_TO_SCENE_UNITS, z * KM_TO_SCENE_UNITS, y * KM_TO_SCENE_UNITS));
+
+
+            } catch (e) {
+                console.error(`Error propagating TLE for orbit trajectory of ${satData.satellite_name} at segment ${i}:`, e);
+                // Potentially stop drawing the orbit if too many errors occur
+                if (i > 10 && orbitPoints.length < i / 2) { // Heuristic: if many early points fail
+                    console.error("Too many errors in orbit propagation. Aborting trajectory drawing for this satellite.");
+                    return;
+                }
+                continue; // Skip this point on error
+            }
+        }
+
+        if (orbitPoints.length < 2) {
+            console.warn(`Not enough valid points (${orbitPoints.length}) to draw orbit for ${satData.satellite_name}.`);
+            return;
+        }
+
         const geometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-        const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
-        orbitLine = new THREE.Line(geometry, material); scene.add(orbitLine);
+        const material = new THREE.LineBasicMaterial({color: 0xff0000}); // Red color for orbit line
+        orbitLine = new THREE.Line(geometry, material);
+        scene.add(orbitLine);
     }
+
+    function projectToScreenCoordinates(worldVector, camera, renderer) {
+        const vector = worldVector.clone();
+        vector.project(camera); // Project 3D point to normalized device coordinates (-1 to +1)
+
+        // Convert normalized device coordinates to screen coordinates
+        const x = (vector.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
+        const y = (vector.y * -0.5 + 0.5) * renderer.domElement.clientHeight; // Y is inverted
+
+        return {x: x, y: y};
+    }
+
+
+    function update3DLabelsPosition() {
+        if (!simParams.showECEFAxes || !camera || !renderer || !simParams.view3D) {
+            // Hide all labels if axes are off, or no 3D view
+            if (labelXecrDiv) labelXecrDiv.style.display = 'none';
+            if (labelYecrDiv) labelYecrDiv.style.display = 'none';
+            if (labelZecrDiv) labelZecrDiv.style.display = 'none';
+            if (labelNorthPoleDiv) labelNorthPoleDiv.style.display = 'none';
+            if (labelEquatorLineDiv) labelEquatorLineDiv.style.display = 'none';
+            if (labelGreenwichMeridianDiv) labelGreenwichMeridianDiv.style.display = 'none';
+            return;
+        }
+
+        const TARGET_AXIS_LENGTH_KM = 10000;
+        const visualAxisExtentInSceneUnits = TARGET_AXIS_LENGTH_KM * KM_TO_SCENE_UNITS;
+        const labelOffset = 1.0; // Offset the label slightly beyond the arrow tip or line end
+        const labelVerticalOffset = 0.5; // For Equator and Meridian labels to float slightly above/distinct
+
+        // X ECR Axis Label (Scene X)
+        if (ecefXAxisHelper && labelXecrDiv) {
+            const posX = projectToScreenCoordinates(new THREE.Vector3(visualAxisExtentInSceneUnits + labelOffset, 0, 0), camera, renderer);
+            labelXecrDiv.style.left = `${posX.x}px`;
+            labelXecrDiv.style.top = `${posX.y}px`;
+            labelXecrDiv.style.display = 'block';
+        }
+        // Y ECR Axis Label (Scene Z)
+        if (ecefYAxisHelper && labelYecrDiv) {
+            const posY = projectToScreenCoordinates(new THREE.Vector3(0, 0, visualAxisExtentInSceneUnits + labelOffset), camera, renderer);
+            labelYecrDiv.style.left = `${posY.x}px`;
+            labelYecrDiv.style.top = `${posY.y}px`;
+            labelYecrDiv.style.display = 'block';
+        }
+        // Z ECR Axis Label (Scene Y - North Pole direction)
+        if (ecefZAxisHelper && labelZecrDiv) {
+            const posZ = projectToScreenCoordinates(new THREE.Vector3(0, visualAxisExtentInSceneUnits + labelOffset, 0), camera, renderer);
+            labelZecrDiv.style.left = `${posZ.x}px`;
+            labelZecrDiv.style.top = `${posZ.y}px`;
+            labelZecrDiv.style.display = 'block';
+        }
+
+        // North Pole Label (at the end of Z ECR axis, slightly above sphere)
+        if (labelNorthPoleDiv) {
+            const northPolePos = projectToScreenCoordinates(new THREE.Vector3(0, EARTH_SCENE_RADIUS + labelOffset, 0), camera, renderer);
+            labelNorthPoleDiv.style.left = `${northPolePos.x}px`;
+            labelNorthPoleDiv.style.top = `${northPolePos.y}px`;
+            labelNorthPoleDiv.style.display = 'block';
+        }
+
+        // Equator Line Label
+        if (equatorLineMesh && labelEquatorLineDiv && equatorLineMesh.userData.radius) {
+            // Position label on the equator line, at a point most visible to camera (e.g., closest point on equator to camera's XZ projection)
+            const cameraPosition = new THREE.Vector3();
+            camera.getWorldPosition(cameraPosition);
+            // Project camera position onto the equatorial plane (scene's XZ plane)
+            const cameraPosOnEquatorPlane = new THREE.Vector3(cameraPosition.x, 0, cameraPosition.z);
+            if (cameraPosOnEquatorPlane.lengthSq() < 0.001) { // If camera is directly above/below pole
+                cameraPosOnEquatorPlane.set(equatorLineMesh.userData.radius, 0, 0); // Default to a point on +X axis
+            } else {
+                cameraPosOnEquatorPlane.normalize().multiplyScalar(equatorLineMesh.userData.radius);
+            }
+            // Add a slight vertical offset for the label itself
+            const equatorLabelPos3D = new THREE.Vector3(cameraPosOnEquatorPlane.x, labelVerticalOffset, cameraPosOnEquatorPlane.z);
+
+            const equatorScreenPos = projectToScreenCoordinates(equatorLabelPos3D, camera, renderer);
+            labelEquatorLineDiv.style.left = `${equatorScreenPos.x}px`;
+            labelEquatorLineDiv.style.top = `${equatorScreenPos.y}px`;
+            labelEquatorLineDiv.style.display = 'block';
+        }
+
+        // Greenwich Meridian Line Label
+        if (greenwichMeridianLineMesh && labelGreenwichMeridianDiv && equatorLineMesh && equatorLineMesh.userData.radius) {
+            const r = equatorLineMesh.userData.radius; // Use equator radius for consistency
+            // Position label near the top of the Greenwich meridian arc (e.g., 30 degrees from North Pole along meridian)
+            // Meridian is in scene's XY plane. Angle from +Y (North).
+            const angleFromNorth = THREE.MathUtils.degToRad(30);
+            const meridianLabelPos3D = new THREE.Vector3(
+                r * Math.sin(angleFromNorth), // X component
+                r * Math.cos(angleFromNorth) + labelVerticalOffset, // Y component (towards North) + offset
+                0 // Z component (on the meridian plane)
+            );
+            const meridianScreenPos = projectToScreenCoordinates(meridianLabelPos3D, camera, renderer);
+            labelGreenwichMeridianDiv.style.left = `${meridianScreenPos.x}px`;
+            labelGreenwichMeridianDiv.style.top = `${meridianScreenPos.y}px`;
+            labelGreenwichMeridianDiv.style.display = 'block';
+        }
+    }
+
 
     function animate() {
         requestAnimationFrame(animate);
-        const now = new Date();
-        const jdayNow = satellite.jday(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
-        const gmstNow = satellite.gstime(jdayNow);
+        const delta = clock.getDelta(); // Time since last frame, useful for animations
 
+        // --- Smooth camera flight handler ---
+        if (cameraMove) {
+            const now = clock.getElapsedTime();
+            const t = Math.min((now - cameraMove.startTime) / cameraMove.duration, 1); // Alpha clamped 0-1
+            const smoothAlpha = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // Ease-in-out quadratic
+
+            camera.position.lerpVectors(cameraMove.startCamPos, cameraMove.endCamPos, smoothAlpha);
+            controls.target.lerpVectors(cameraMove.startTarget, cameraMove.endTarget, smoothAlpha);
+            controls.update(); // Important for OrbitControls after manual camera/target change
+
+            if (t >= 1) {
+                cameraMove = null; // Flight finished
+                controls.enabled = true; // Re-enable controls
+            }
+        } else {
+            if (controls && controls.enabled) controls.update(); // Standard controls update
+        }
+
+
+        const currentTime = new Date();
+        const jdayCurrent = satellite.jday(currentTime.getUTCFullYear(), currentTime.getUTCMonth() + 1, currentTime.getUTCDate(), currentTime.getUTCHours(), currentTime.getUTCMinutes(), currentTime.getUTCSeconds());
+        const gmstCurrent = satellite.gstime(jdayCurrent);
+
+        // Update TLE sprite positions
         satellites.forEach(sat => {
-            if (!sat.mesh || !sat.mesh.visible || !sat.satrec) return;
-            try {
-                const posVel = satellite.propagate(sat.satrec, now);
-                if (!posVel || !posVel.position) return;
-                const ecf = satellite.eciToEcf(posVel.position, gmstNow);
-                const kmToScene = 10 / 6371;
-                sat.mesh.position.set(ecf.x * kmToScene, ecf.z * kmToScene, ecf.y * kmToScene);
-            } catch (e) { /* Silent error */ }
+            if (sat.mesh && sat.mesh.visible && sat.satrec) { // Only update visible sprites with valid TLE
+                try {
+                    const posVel = satellite.propagate(sat.satrec, currentTime);
+                    if (posVel && posVel.position) {
+                        const ecf = satellite.eciToEcf(posVel.position, gmstCurrent);
+                        sat.mesh.position.set(ecf.x * KM_TO_SCENE_UNITS, ecf.z * KM_TO_SCENE_UNITS, ecf.y * KM_TO_SCENE_UNITS);
+                    }
+                } catch (e) {
+                    // console.warn(`Error propagating TLE for sprite ${sat.satellite_name}: ${e.message}`);
+                    // Consider making the sprite less prominent or showing an error state if propagation fails repeatedly
+                    if (sat.mesh) sat.mesh.visible = false; // Hide if problematic
+                }
+            }
         });
+
+        // Update detailed satellite model position if it's active
+        if (detailedSatelliteModel && detailedSatelliteModel.visible && currentSelectedSatellite && currentSelectedSatellite.satrec) {
+            try {
+                const posVel = satellite.propagate(currentSelectedSatellite.satrec, currentTime);
+                if (posVel && posVel.position) {
+                    const ecf = satellite.eciToEcf(posVel.position, gmstCurrent);
+                    detailedSatelliteModel.position.set(ecf.x * KM_TO_SCENE_UNITS, ecf.z * KM_TO_SCENE_UNITS, ecf.y * KM_TO_SCENE_UNITS);
+                }
+            } catch (e) {
+                // console.warn(`[Detailed Model] Error updating position for ${currentSelectedSatellite.satellite_name}:`, e);
+                // If propagation fails, the model will stay at its last known position.
+            }
+        }
+
 
         const show3D = simParams.view3D;
         const showMercator = simParams.viewMercator;
 
-        if (renderer) renderer.domElement.style.display = (show3D) ? "block" : "none";
+        if (renderer) renderer.domElement.style.display = show3D ? "block" : "none";
 
         if (mercatorContainer) {
             if (showMercator) {
                 mercatorContainer.style.display = "block";
-                if (!show3D) {
-                    mercatorContainer.classList.add("fullscreen");
-                } else {
-                    mercatorContainer.classList.remove("fullscreen");
-                }
+                mercatorContainer.classList.toggle("fullscreen", !show3D); // Add fullscreen class if 3D is hidden
+
                 if (mercatorCanvasElement && mapBackgroundDiv) {
+                    // Check if canvas dimensions need update (e.g., if container was resized)
                     const currentMapContainerWidth = mapBackgroundDiv.clientWidth;
                     const currentMapContainerHeight = mapBackgroundDiv.clientHeight;
                     if (mercatorCanvasElement.width !== currentMapContainerWidth || mercatorCanvasElement.height !== currentMapContainerHeight) {
                         mercatorCanvasElement.width = currentMapContainerWidth;
                         mercatorCanvasElement.height = currentMapContainerHeight;
+                        // mapWidth and mapHeight might also need update if they are used elsewhere for calculations
+                        mapWidth = currentMapContainerWidth;
+                        mapHeight = currentMapContainerHeight;
                     }
-                    updateMercatorMap();
+                    updateMercatorMap(); // Redraw map content
                 }
             } else {
                 mercatorContainer.style.display = "none";
             }
         }
 
-        if (show3D && controls) controls.update();
-        if (show3D && renderer && scene && camera) renderer.render(scene, camera);
+        if (show3D) {
+            // controls.update() is handled by cameraMove or its else block
+            if (renderer && scene && camera) renderer.render(scene, camera);
+            update3DLabelsPosition(); // Update HTML label positions
+        } else {
+            // Ensure 3D labels are hidden if 3D view is off
+            if (labelXecrDiv) labelXecrDiv.style.display = 'none';
+            if (labelYecrDiv) labelYecrDiv.style.display = 'none';
+            if (labelZecrDiv) labelZecrDiv.style.display = 'none';
+            if (labelNorthPoleDiv) labelNorthPoleDiv.style.display = 'none';
+            if (labelEquatorLineDiv) labelEquatorLineDiv.style.display = 'none';
+            if (labelGreenwichMeridianDiv) labelGreenwichMeridianDiv.style.display = 'none';
+        }
     }
 
     function drawDayNightTerminatorMercator(ctx, width, height) {
@@ -940,8 +1375,8 @@
         const subSolarLon = (hoursUTC * 15) - 180;
         const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
         const N = dayOfYear;
-        const declRad = -Math.asin(0.39779 * Math.cos(0.98565 * (N + 10) * Math.PI/180 + 1.914 * Math.sin(0.98565 * (N - 2) * Math.PI/180) * Math.PI/180));
-        const subSolarLat = declRad * 180/Math.PI;
+        const declRad = -Math.asin(0.39779 * Math.cos(0.98565 * (N + 10) * Math.PI / 180 + 1.914 * Math.sin(0.98565 * (N - 2) * Math.PI / 180) * Math.PI / 180));
+        const subSolarLat = declRad * 180 / Math.PI;
 
         ctx.save();
         ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
@@ -952,7 +1387,7 @@
 
         for (let i = 0; i <= width; i++) {
             const lon = (i / width) * 360 - 180;
-            let terminatorLat = Math.atan(-Math.cos((lon - subSolarLon) * Math.PI/180) / Math.tan(subSolarLat * Math.PI/180)) * 180/Math.PI;
+            let terminatorLat = Math.atan(-Math.cos((lon - subSolarLon) * Math.PI / 180) / Math.tan(subSolarLat * Math.PI / 180)) * 180 / Math.PI;
             terminatorLat = Math.max(-85.05112878, Math.min(85.05112878, terminatorLat));
             const p = latLonToMercator(terminatorLat, lon);
             points.push(p);
@@ -960,7 +1395,10 @@
             if (i === width) lastPoint = p;
         }
 
-        if (!firstPoint) { ctx.restore(); return; }
+        if (!firstPoint) {
+            ctx.restore();
+            return;
+        }
 
         ctx.moveTo(firstPoint.x, firstPoint.y);
         for (let i = 1; i < points.length; i++) {
@@ -984,7 +1422,7 @@
 
         mercatorCtx.clearRect(0, 0, mercatorCanvasElement.width, mercatorCanvasElement.height);
 
-        if(typeof drawDayNightTerminatorMercator === 'function') {
+        if (typeof drawDayNightTerminatorMercator === 'function') {
             drawDayNightTerminatorMercator(mercatorCtx, mercatorCanvasElement.width, mercatorCanvasElement.height);
         }
 
@@ -1001,17 +1439,19 @@
                     if (!posVel || !posVel.position) return null;
                     const geo = satellite.eciToGeodetic(posVel.position, gmstNow);
                     const pt = latLonToMercator(satellite.degreesLat(geo.latitude), satellite.degreesLong(geo.longitude));
-                    return { sat, pt, name: sat.satellite_name };
-                } catch (e) { return null; }
+                    return {sat, pt, name: sat.satellite_name};
+                } catch (e) {
+                    return null;
+                }
             })
             .filter(Boolean)
-            .sort((a,b) => a.pt.y - b.pt.y);
+            .sort((a, b) => a.pt.y - b.pt.y);
 
         satDrawData.forEach(data => {
-            const { sat, pt, name } = data;
+            const {sat, pt, name} = data;
             const iconSize = 12;
             const leaderLength = 15;
-            const textPadding = { x: 5, y: 3 };
+            const textPadding = {x: 5, y: 3};
 
             if (mercatorSatIconLoaded && mercatorSatIcon.complete && mercatorSatIcon.naturalHeight !== 0) {
                 mercatorCtx.drawImage(mercatorSatIcon, pt.x - iconSize / 2, pt.y - iconSize / 2, iconSize, iconSize);
@@ -1027,37 +1467,50 @@
             const labelWidth = textMetrics.width + 2 * textPadding.x;
             const labelHeight = 12 + 2 * textPadding.y;
 
-            const angles = [ -Math.PI / 4, -Math.PI / 2, -3 * Math.PI / 4, Math.PI, 3 * Math.PI / 4, Math.PI / 2, Math.PI / 4, 0 ];
+            const angles = [-Math.PI / 4, -Math.PI / 2, -3 * Math.PI / 4, Math.PI, 3 * Math.PI / 4, Math.PI / 2, Math.PI / 4, 0];
             let bestPos = null;
 
             for (const angle of angles) {
                 const leaderEndX = pt.x + (iconSize / 2 + leaderLength) * Math.cos(angle);
                 const leaderEndY = pt.y + (iconSize / 2 + leaderLength) * Math.sin(angle);
-                let textX = leaderEndX + ( (Math.cos(angle) >= 0 || Math.abs(Math.cos(angle)) < 0.1) ? textPadding.x : -labelWidth + textPadding.x );
+                let textX = leaderEndX + ((Math.cos(angle) >= 0 || Math.abs(Math.cos(angle)) < 0.1) ? textPadding.x : -labelWidth + textPadding.x);
                 let textY = leaderEndY - labelHeight / 2;
-                const currentLabelRect = { x: textX - textPadding.x, y: textY - textPadding.y, width: labelWidth, height: labelHeight };
+                const currentLabelRect = {
+                    x: textX - textPadding.x,
+                    y: textY - textPadding.y,
+                    width: labelWidth,
+                    height: labelHeight
+                };
 
                 let isOverlapping = labelPositions.some(lp =>
                     currentLabelRect.x < lp.x + lp.width && currentLabelRect.x + currentLabelRect.width > lp.x &&
                     currentLabelRect.y < lp.y + lp.height && currentLabelRect.y + currentLabelRect.height > lp.y);
 
-                if (!isOverlapping) { bestPos = { leaderEndX, leaderEndY, textX, textY, labelRect: currentLabelRect }; break; }
+                if (!isOverlapping) {
+                    bestPos = {leaderEndX, leaderEndY, textX, textY, labelRect: currentLabelRect};
+                    break;
+                }
             }
 
             if (bestPos) {
                 labelPositions.push(bestPos.labelRect);
-                mercatorCtx.beginPath(); mercatorCtx.moveTo(pt.x, pt.y);
+                mercatorCtx.beginPath();
+                mercatorCtx.moveTo(pt.x, pt.y);
                 mercatorCtx.lineTo(bestPos.leaderEndX, bestPos.leaderEndY);
-                mercatorCtx.strokeStyle = "rgba(200, 200, 200, 0.7)"; mercatorCtx.lineWidth = 1; mercatorCtx.stroke();
+                mercatorCtx.strokeStyle = "rgba(200, 200, 200, 0.7)";
+                mercatorCtx.lineWidth = 1;
+                mercatorCtx.stroke();
                 mercatorCtx.fillStyle = "rgba(0, 0, 0, 0.6)";
                 mercatorCtx.fillRect(bestPos.labelRect.x, bestPos.labelRect.y, bestPos.labelRect.width, bestPos.labelRect.height);
                 mercatorCtx.fillStyle = sat.isSelected ? "#ff8080" : "#00ddff";
-                mercatorCtx.textAlign = "left"; mercatorCtx.textBaseline = "middle";
-                mercatorCtx.fillText(name, bestPos.textX, bestPos.textY + labelHeight/2 - textPadding.y/2 +1);
+                mercatorCtx.textAlign = "left";
+                mercatorCtx.textBaseline = "middle";
+                mercatorCtx.fillText(name, bestPos.textX, bestPos.textY + labelHeight / 2 - textPadding.y / 2 + 1);
             } else {
                 mercatorCtx.fillStyle = sat.isSelected ? "#ff4444" : "#00aaff";
-                mercatorCtx.textAlign = "center"; mercatorCtx.textBaseline = "bottom";
-                mercatorCtx.fillText(name, pt.x, pt.y - iconSize/2 - 2);
+                mercatorCtx.textAlign = "center";
+                mercatorCtx.textBaseline = "bottom";
+                mercatorCtx.fillText(name, pt.x, pt.y - iconSize / 2 - 2);
             }
         });
     }
@@ -1073,38 +1526,65 @@
         return {x, y};
     }
 
+
     function onWindowResize() {
         if (camera && renderer) {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
+        // If Mercator map is full screen or its container resizes with window, update it too
+        if (mercatorContainer && mercatorContainer.style.display !== 'none' && mapBackgroundDiv) {
+            const currentMapContainerWidth = mapBackgroundDiv.clientWidth;
+            const currentMapContainerHeight = mapBackgroundDiv.clientHeight;
+            if (mercatorCanvasElement.width !== currentMapContainerWidth || mercatorCanvasElement.height !== currentMapContainerHeight) {
+                mercatorCanvasElement.width = currentMapContainerWidth;
+                mercatorCanvasElement.height = currentMapContainerHeight;
+                mapWidth = currentMapContainerWidth; // Update global dimension vars if used elsewhere
+                mapHeight = currentMapContainerHeight;
+                // updateMercatorMap(); // Redraw immediately, or let animate loop handle it
+            }
+        }
     }
+
     window.addEventListener('resize', onWindowResize);
+
 
     async function start() {
         try {
-            await loadConfigs();
+            await loadConfigs(); // Load all JSON configurations first
+            // Now that configs are loaded (including sceneConfig), initialize 3D environment
             init3D();
-            initMercatorView();
-            await setupTLESatellites();
+            initMercatorView(); // Initialize Mercator view (can be done after 3D)
+            await setupTLESatellites(); // Load TLE data and create satellite sprites
 
-            setupHTMLControls();
-            updateSatelliteList();
+            setupHTMLControls(); // Setup UI controls and their event listeners
+            updateSatelliteList(); // Populate dropdowns and filter based on initial simParams
+            updateECEFAxesVisibility(); // Set initial visibility of ECEF axes and labels
 
+            // Initial orbit display based on simParams and if a satellite is pre-selected (though usually not)
             if (simParams.showOrbit && currentSelectedSatellite) {
                 updateOrbitTrajectory(currentSelectedSatellite);
             } else {
-                simParams.showOrbit = false;
+                simParams.showOrbit = false; // Ensure it's off if no sat selected
                 if (showOrbitToggle) showOrbitToggle.checked = false;
             }
-            animate();
+
+            animate(); // Start the main animation loop
         } catch (e) {
-            console.error("Critical error during initialization:", e);
-            document.body.innerHTML = `<div style="color:red; padding:20px; font-family:monospace;"><h1>Initialization Failed</h1><pre>${e.stack || e.message}</pre><p>Check console and ensure remote resources (configs, TLEs, textures) are accessible on GitHub and paths are correct.</p></div>`;
+            console.error("Critical error during initialization sequence:", e);
+            // Display a user-friendly error message on the page
+            document.body.innerHTML = `
+                <div style="color:red; background:white; border: 2px solid red; padding:20px; font-family:monospace; margin: 20px;">
+                    <h1>Application Initialization Failed</h1>
+                    <p>A critical error occurred. Please check the browser console (usually F12) for more details.</p>
+                    <pre>Error: ${e.message}</pre>
+                    <p>Try refreshing the page. If the problem persists, ensure all resources (configs, TLEs, textures) are accessible (e.g., from GitHub or local paths) and that there are no network issues.</p>
+                </div>`;
         }
     }
-    start();
+
+    start(); // Execute the main startup function
 </script>
 </body>
 </html>

@@ -1,59 +1,19 @@
 {
-  "26900": {
-    "name": "Intelsat 902 (IS-902)",
+  "0": {
+    "name": "0",
     "meta": {
-      "norad_id": 26900,
-      "cospar_id": "2001-039A",
-      "operator": "Intelsat",
-      "manufacturer": "Space Systems/Loral",
-      "bus": "SSL 1300HL",
-      "launch_date": "2001-08-30T06:46:00Z",
-      "launch_vehicle": "Ariane 44L",
-      "launch_site": "Guiana Space Centre, Kourou, ELA-2",
-      "launch_mass_kg": 4725,
-      "dry_mass_kg": 1972,
-      "power_operational_kW": 8.6,
-      "power_bol_kW": 10.0,
-      "initial_orbital_slot_deg_w": -62.0,
-      "final_operational_slot_deg_w": 50.0,
-      "status": "Operational (Inclined Orbit, End of Life)",
-      "deorbited_date": null,
-      "disposal_method": "N/A (No MEV servicing, likely in controlled retirement orbit)",
-      "designed_lifespan_years": 13,
-      "life_extension": null
+      "norad_id": 0
     },
     "payload": {
       "transponders": {
-        "C-band": 44,
-        "Ku-band": 12
       },
       "bandwidth_MHz": [
-        36,
-        72
       ],
-      "EIRP_dBW": {
-        "C_global_beam": ">31.0 (EOC)",
-        "C_hemi_beam": ">35.1 (EOC)",
-        "C_zone_beam": ">35.1 (EOC)",
-        "Ku_spot_beam_1": ">47.0 (EOC)",
-        "Ku_spot_beam_2": ">47.0 (EOC)"
-      },
-      "G_T_dB_per_K": {
-        "C_global_beam": "-11.2 to -6.1",
-        "C_hemi_beam": "-7.4 to +4.6",
-        "C_zone_beam": "-7.4 to +4.6",
-        "Ku_spot_beam_1": "Up to +9.0",
-        "Ku_spot_beam_2": "Up to +8.9"
-      },
       "polarization": {
         "C-band": "Circular (RHCP/LHCP)",
         "Ku-band": "Linear (Horizontal/Vertical)"
       },
       "frequency_bands_ghz": {
-        "C-band_downlink": "3.625-4.200",
-        "C-band_uplink": "5.850-6.425",
-        "Ku-band_downlink": "10.95-11.70",
-        "Ku-band_uplink": "14.00-14.50"
       }
     },
     "geometry": {
