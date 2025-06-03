@@ -50,7 +50,14 @@
     import * as THREE from 'three';
     import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
     import {updateSatelliteInfo, satelliteLoadMenu} from './js/SatelliteLoadMenu.js';
-    import { showSatellite, clearCurrentDetailedSat } from './js/satelliteModelLoader.js';
+    import {
+        showSatellite,
+        buildTransponderBeam,
+        buildBeamMesh,
+        buildAllBeams,
+        buildAllBeamMeshes,
+        clearCurrentDetailedSat
+    } from './js/satelliteModelLoader.js';
 
     // Load menu
     const versionNumber = "1.0g"; // Updated version
@@ -347,7 +354,7 @@
         controls.enableDamping = controlsConfig.enableDamping;
         controls.dampingFactor = controlsConfig.dampingFactor;
         controls.minDistance = EARTH_SCENE_RADIUS * 1.2; // Prevent zooming inside Earth too much
-        controls.maxDistance = EARTH_SCENE_RADIUS * 10;  // Max zoom out
+        controls.maxDistance = EARTH_SCENE_RADIUS * 25;  // Max zoom out
     }
 
     function initMercatorView() {
@@ -701,7 +708,7 @@
 
         if (selectedNameInDropdown === "None") {
             currentSelectedSatellite = null; // No TLE data object selected
-            updateSatelliteInfo(satelliteInfoDiv,null);
+            updateSatelliteInfo(satelliteInfoDiv, null);
             resetCameraToDefault();
             // Ensure all TLE sprites are reset visually if needed (updateSatelliteList handles this based on currentSelectedSatellite)
             updateSatelliteList(); // This will ensure correct visual state for sprites
@@ -714,7 +721,7 @@
         if (!tleSatData) {
             console.warn(`Satellite named "${selectedNameInDropdown}" not found or not visible in current filter.`);
             currentSelectedSatellite = null;
-            updateSatelliteInfo(satelliteInfoDiv,null);
+            updateSatelliteInfo(satelliteInfoDiv, null);
             // Potentially reset dropdown to "None" if the selected satellite is no longer valid
             if (satelliteSelectDropdown) satelliteSelectDropdown.value = "None";
             simParams.selectedSatelliteName = "None";
@@ -722,7 +729,7 @@
         }
 
         currentSelectedSatellite = tleSatData; // Store the actual satellite data object
-        updateSatelliteInfo(satelliteInfoDiv,tleSatData);
+        updateSatelliteInfo(satelliteInfoDiv, tleSatData);
         if (simParams.showOrbit) {
             updateOrbitTrajectory(tleSatData);
         }
@@ -779,6 +786,8 @@
     async function loadAndDisplayDetailedSatellite(noradId, tleSatData) {
         console.log(`Attempting to load detailed model for NORAD ID: ${noradId}`);
         const newModel = await showSatellite(noradId, scene);
+        //const newbeams = await buildAllBeamMeshes(noradId, newModel.userData.payload.transponders);
+        const newbeams = await buildAllBeams(noradId,currentSelectedSatellite, newModel.userData.payload.transponders);
 
         if (newModel) {
             detailedSatelliteModel = newModel; // Store the THREE.Group
@@ -813,6 +822,9 @@
                 console.warn(`[Detailed Model] TLE data or satrec missing for NORAD ${noradId}. Model loaded at origin, cannot track orbit.`);
                 currentSelectedSatellite = null; // No TLE data to track
             }
+            if (newbeams) {
+                scene.add(newbeams);
+            }
 
             // Deselect other TLE sprites
             satellites.forEach(s => {
@@ -823,7 +835,7 @@
                 }
             });
 
-            flyCameraToSatellite(detailedSatelliteModel, 1500, false); // Fly to the detailed model itself
+            flyCameraToSatellite(tleSatData.mesh, 3000, false); // Fly to the detailed model itself
             if (simParams.showOrbit && currentSelectedSatellite) {
                 updateOrbitTrajectory(currentSelectedSatellite);
             }
@@ -896,7 +908,7 @@
         }
 
         const earthCenter = new THREE.Vector3(0, 0, 0);
-        const targetPos   = new THREE.Vector3().setFromMatrixPosition(targetObject.matrixWorld);
+        const targetPos = new THREE.Vector3().setFromMatrixPosition(targetObject.matrixWorld);
         const dirToTarget = new THREE.Vector3().subVectors(targetPos, earthCenter).normalize();
 
         let distance;
@@ -928,11 +940,11 @@
         /* ---------- animation set‑up ---------- */
         const startCamPos = camera.position.clone();
         const startTarget = controls.target.clone();
-        const endTarget   = targetPos.clone();               // always look at the sat
+        const endTarget = targetPos.clone();               // always look at the sat
 
         cameraMove = {
-            startTime : clock.getElapsedTime(),
-            duration  : millis / 1000,
+            startTime: clock.getElapsedTime(),
+            duration: millis / 1000,
             startCamPos,
             endCamPos,
             startTarget,
@@ -1053,7 +1065,7 @@
                 clearDetailedSatelliteView(); // Clear detailed model if it was for this sat
                 selectSatelliteSprite(null); // Deselect TLE sprite
                 currentSelectedSatellite = null;
-                updateSatelliteInfo(satelliteInfoDiv,null);
+                updateSatelliteInfo(satelliteInfoDiv, null);
             }
         }
         // If dropdown is "None" but a detailed model is showing, ensure consistency
@@ -1062,7 +1074,7 @@
             // but as a safeguard:
             clearDetailedSatelliteView();
             currentSelectedSatellite = null;
-            updateSatelliteInfo(satelliteInfoDiv,null);
+            updateSatelliteInfo(satelliteInfoDiv, null);
         }
     }
 
@@ -1096,7 +1108,7 @@
             if (satelliteSelectDropdown) satelliteSelectDropdown.value = "None";
             removeAllGeometry(); // Clear orbit line
         }
-        updateSatelliteInfo(satelliteInfoDiv,tleSatData); // Update text info panel
+        updateSatelliteInfo(satelliteInfoDiv, tleSatData); // Update text info panel
     }
 
     function removeAllGeometry() {
@@ -1109,61 +1121,33 @@
         // Add removal for other types of geometry if needed
     }
 
-    function updateOrbitTrajectory(satData) { // satData is the TLE object
-        removeAllGeometry(); // Clear existing orbit line
+    function updateOrbitTrajectory(satData) {
+        removeAllGeometry();
         if (!simParams.showOrbit || !satData || !satData.satrec) return;
-
-        const meanMotion = satData.satrec.no; // Revolutions per day
+        const meanMotion = satData.satrec.no;
         if (meanMotion === 0) {
-            console.warn(`Satellite ${satData.satellite_name} (NORAD: ${satData.norad_id}) has zero mean motion (no). Cannot calculate orbit period.`);
+            console.warn(`${satData.satellite_name} has zero mean motion.`);
             return;
         }
-        const periodMins = (1 / meanMotion) * 24 * 60; // Orbital period in minutes
-        const segments = 360; // Number of points for the orbit line (e.g., one point per degree of orbit)
-        const timeStepMins = periodMins / segments; // Time step for each segment in minutes
-
+        const periodMins = 1440 / meanMotion;
+        const segments = 14400;
+        const step = periodMins / segments;
         const orbitPoints = [];
-        const now = new Date(); // Current time for propagation start
-
+        const now = new Date();
         for (let i = 0; i <= segments; i++) {
-            const futureTime = new Date(now.getTime() + i * timeStepMins * 60000); // Time for this point in ms
-            try {
-                const posVel = satellite.propagate(satData.satrec, futureTime);
-                if (!posVel || !posVel.position) { // Check if propagation was successful
-                    console.warn(`Propagation failed for segment ${i} of ${satData.satellite_name}`);
-                    continue; // Skip this point
-                }
-                const {x, y, z} = posVel.position; // ECI coordinates in km
-                // Convert ECI to ECF for display aligned with Earth's rotation (if needed, or use ECI directly)
-                // For simplicity, TLE propagation is often visualized in ECI directly,
-                // but if Earth rotates, the orbit path relative to Earth surface changes.
-                // Here, we'll plot the ECI path in the inertial frame.
-                // If you need ECF path, you'd convert each point:
-                // const jdayFuture = satellite.jday(futureTime.getUTCFullYear(), ...);
-                // const gmstFuture = satellite.gstime(jdayFuture);
-                // const ecfPos = satellite.eciToEcf(posVel.position, gmstFuture);
-                // orbitPoints.push(new THREE.Vector3(ecfPos.x * KM_TO_SCENE_UNITS, ecfPos.z * KM_TO_SCENE_UNITS, ecfPos.y * KM_TO_SCENE_UNITS));
-                orbitPoints.push(new THREE.Vector3(x * KM_TO_SCENE_UNITS, z * KM_TO_SCENE_UNITS, y * KM_TO_SCENE_UNITS));
-
-
-            } catch (e) {
-                console.error(`Error propagating TLE for orbit trajectory of ${satData.satellite_name} at segment ${i}:`, e);
-                // Potentially stop drawing the orbit if too many errors occur
-                if (i > 10 && orbitPoints.length < i / 2) { // Heuristic: if many early points fail
-                    console.error("Too many errors in orbit propagation. Aborting trajectory drawing for this satellite.");
-                    return;
-                }
-                continue; // Skip this point on error
-            }
+            const future = new Date(now.getTime() + i * step * 60000);
+            const posVel = satellite.propagate(satData.satrec, future);
+            if (!posVel || !posVel.position) continue;
+            const {x, y, z} = posVel.position;
+            const kmToScene = EARTH_SCENE_RADIUS / EARTH_RADIUS_KM;
+            orbitPoints.push(new THREE.Vector3(x * kmToScene, z * kmToScene, y * kmToScene));
         }
-
         if (orbitPoints.length < 2) {
-            console.warn(`Not enough valid points (${orbitPoints.length}) to draw orbit for ${satData.satellite_name}.`);
+            console.warn(`Not enough points for orbit: ${orbitPoints.length}`);
             return;
         }
-
         const geometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-        const material = new THREE.LineBasicMaterial({color: 0xff0000}); // Red color for orbit line
+        const material = new THREE.LineBasicMaterial({color: 0xff0000});
         orbitLine = new THREE.Line(geometry, material);
         scene.add(orbitLine);
     }

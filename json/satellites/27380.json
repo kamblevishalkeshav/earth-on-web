@@ -63,7 +63,7 @@
         },
         {
           "name": "West Antenna",
-          "type": "dish",
+          "type": "square_dish",
           "band": "Ku",
           "radius_m": 1.0,
           "depth_m": 0.4,
