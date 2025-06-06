@@ -4,7 +4,7 @@
 // Clean template‑literal version (easier to read / edit than string +).
 // -------------------------------------------------------------------
 
-export function satelliteLoadMenu() {
+export function satelliteMenuLoader() {
     return /* html */ `
   <div id="controlsContainer">
     <div id="versionDisplay"></div>
@@ -43,6 +43,10 @@ export function satelliteLoadMenu() {
 
         <input type="checkbox" id="showECEFAxesToggle">
         <label for="showECEFAxesToggle" class="checkbox-label">Show ECEF Axes</label>
+        
+      <!-- inside controlsContainer, next to other toggles -->
+<label><input type="checkbox" id="showOrbitFrameToggle"> Show Orbit Frame (LVLH)</label>
+        
       </div>
     </div>
 

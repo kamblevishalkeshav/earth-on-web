@@ -232,9 +232,6 @@ canvas {
 /* Styles for 3D Overlay Labels (ECEF Axes, North Pole, Equator, Meridian) */
 .axis-label {
   position: absolute;
-  color: #00ff00; /* Green to match axes and lines */
-  font-size: 12px;
-  font-family: monospace;
   background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
   padding: 2px 5px;
   border-radius: 3px;
@@ -243,6 +240,9 @@ canvas {
   white-space: nowrap;
   display: none; /* Hidden by default, JS will manage visibility */
   z-index: 10; /* Ensure they are above the 3D canvas but below UI controls */
+  color: #ddd;
+  font: bold 12px/1.1em sans-serif;
+  text-shadow: 0 0 3px #000;
 }
 /* CSS2DObject labels for detailed satellite models */
 .label {

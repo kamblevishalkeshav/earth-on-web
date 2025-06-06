@@ -5,7 +5,6 @@
     <title>Satellite Simulation - HTML Controls</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/satellite.js@4.0.0/dist/satellite.min.js"></script>
     <script type="importmap">
         {
@@ -25,14 +24,6 @@
     </div>
 </div>
 
-<div id="labelXecr" class="axis-label">X<sub>ecr</sub></div>
-<div id="labelYecr" class="axis-label">Y<sub>ecr</sub></div>
-<div id="labelZecr" class="axis-label">Z<sub>ecr</sub></div>
-<div id="labelNorthPole" class="axis-label">North Pole</div>
-<div id="labelEquatorLine" class="axis-label">Equator Line</div>
-<div id="labelGreenwichMeridian" class="axis-label">Greenwich Meridian Line:</div>
-
-
 <script type="module">
 
     let GITHUB_REPO_RAW_BASE_URL = "https://raw.githubusercontent.com/arcazj/openbexi_earth_orbit/master/";
@@ -41,29 +32,35 @@
     let SATELLITES_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "json/satellites/"; // Used by satelliteModelLoader.js as well
     window.SATELLITE_MODELS_BASE_URL = SATELLITES_BASE_URL; // Make it available for satelliteModelLoader
 
-    const EARTH_RADIUS_KM = 6371; // Actual Earth radius
-    const EARTH_SCENE_RADIUS = 10; // Earth radius in Three.js scene units
-    const KM_TO_SCENE_UNITS = EARTH_SCENE_RADIUS / EARTH_RADIUS_KM;
-    window.KM_TO_SCENE_UNITS = KM_TO_SCENE_UNITS; // Make it available globally if needed by other scripts
-    window.METERS_TO_SCENE_UNITS = KM_TO_SCENE_UNITS * 1000;
-
     import * as THREE from 'three';
     import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-    import {updateSatelliteInfo, satelliteLoadMenu} from './js/SatelliteLoadMenu.js';
+    import {updateSatelliteInfo, satelliteMenuLoader} from './js/SatelliteMenuLoader.js';
     import {
         showSatellite,
-        buildTransponderBeam,
-        buildBeamMesh,
         buildAllBeams,
-        buildAllBeamMeshes,
         clearCurrentDetailedSat
     } from './js/satelliteModelLoader.js';
+    import {
+        addECEFAxes,
+        update3DLabelsPosition,
+        updateECEFAxesVisibility
+    } from './js/EarthFrameLoader.js';
+    import {
+        createOrbitFrame,
+        updateOrbitFrame,
+        setOrbitFrameVisibility
+    } from './js/orbitFrameLoader.js';
+    import {
+        EARTH_RADIUS_KM,
+        KM_TO_SCENE_UNITS,
+        EARTH_SCENE_RADIUS
+    } from './js/SatelliteConstantLoader.js';
 
     // Load menu
-    const versionNumber = "1.0g"; // Updated version
+    const versionNumber = "1.0h"; // Updated version
     const versionRepoUrl = "https://github.com/arcazj/openbexi_earth_orbit";
     const versionText = `version ${versionNumber} - hosted at`;
-    document.getElementById('ob_menu').innerHTML = satelliteLoadMenu();
+    document.getElementById('ob_menu').innerHTML = satelliteMenuLoader();
 
     let usingLocalAssets = false;
 
@@ -73,12 +70,11 @@
     let mercatorCtx, mapWidth = 400, mapHeight = 200;
     let satellites = [];
     let orbitLine = null;
+    let orbitFrame = null
     let currentSelectedSatellite = null; // This will store the TLE data object for the selected satellite
     let textureLoader;
     let mercatorSatIcon = new Image();
     let mercatorSatIconLoaded = false;
-    let ecefXAxisHelper, ecefYAxisHelper, ecefZAxisHelper;
-    let equatorLineMesh, greenwichMeridianLineMesh;
     let detailedSatelliteModel = null; // This will store the THREE.Group from satelliteModelLoader
 
     const simParams = {
@@ -89,11 +85,13 @@
         view3D: true,
         viewMercator: false,
         useHighDefTexture: false,
-        showECEFAxes: false
+        showECEFAxes: false,
+        showOrbitFrame: false
     };
 
     let orbitTypeFilterSelect, companyFilterSelect, satelliteCountDisplay;
-    let view3DToggle, viewMercatorToggle, showOrbitToggle, highDefToggleElement, showECEFAxesToggleElement;
+    let view3DToggle, viewMercatorToggle, showOrbitToggle, showOrbitFrameToggle;
+    let highDefToggleElement, showECEFAxesToggleElement, showOrbitFrameToggleElement;
     let satelliteSelectDropdown, satelliteInfoDiv;
     let mercatorContainer, mercatorCanvasElement, mapBackgroundDiv;
     let controlsContainerElement, menuToggleBtnElement, versionDisplayElement;
@@ -259,103 +257,67 @@
         );
     }
 
-    function updateECEFAxesVisibility() {
-        const visible = simParams.showECEFAxes;
-        if (ecefXAxisHelper) ecefXAxisHelper.visible = visible;
-        if (ecefYAxisHelper) ecefYAxisHelper.visible = visible;
-        if (ecefZAxisHelper) ecefZAxisHelper.visible = visible;
-        if (equatorLineMesh) equatorLineMesh.visible = visible;
-        if (greenwichMeridianLineMesh) greenwichMeridianLineMesh.visible = visible;
-
-        // Labels
-        if (labelXecrDiv) labelXecrDiv.style.display = visible ? 'block' : 'none';
-        if (labelYecrDiv) labelYecrDiv.style.display = visible ? 'block' : 'none';
-        if (labelZecrDiv) labelZecrDiv.style.display = visible ? 'block' : 'none';
-        if (labelNorthPoleDiv) labelNorthPoleDiv.style.display = visible ? 'block' : 'none';
-        if (labelEquatorLineDiv) labelEquatorLineDiv.style.display = visible ? 'block' : 'none';
-        if (labelGreenwichMeridianDiv) labelGreenwichMeridianDiv.style.display = visible ? 'block' : 'none';
-    }
-
-
     function init3D() {
+        /* ───────── Scene, Camera, Renderer ───────── */
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(sceneConfig.camera.fov, window.innerWidth / window.innerHeight, sceneConfig.camera.near, sceneConfig.camera.far);
+
+        camera = new THREE.PerspectiveCamera(
+            sceneConfig.camera.fov,
+            window.innerWidth / window.innerHeight,
+            sceneConfig.camera.near,
+            sceneConfig.camera.far
+        );
         camera.position.set(...sceneConfig.camera.position);
 
         renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        window.renderer = renderer; // Make renderer globally available for satelliteModelLoader
 
-        scene.add(new THREE.AmbientLight(sceneConfig.ambientLight.color, sceneConfig.ambientLight.intensity));
-        const dirLight = new THREE.DirectionalLight(sceneConfig.directionalLight.color, sceneConfig.directionalLight.intensity);
+        /* expose for other modules (orbitFrame labels need them) */
+        window.renderer = renderer;
+        window.camera = camera;
+
+        /* ───────── Lighting ───────── */
+        scene.add(new THREE.AmbientLight(
+            sceneConfig.ambientLight.color,
+            sceneConfig.ambientLight.intensity
+        ));
+
+        const dirLight = new THREE.DirectionalLight(
+            sceneConfig.directionalLight.color,
+            sceneConfig.directionalLight.intensity
+        );
         dirLight.position.set(...sceneConfig.directionalLight.position);
         scene.add(dirLight);
 
+        /* ───────── Earth mesh ───────── */
         textureLoader = new THREE.TextureLoader();
-        const earthMat = new THREE.MeshPhongMaterial({color: 0xffffff}); // Start with white, texture will override
-        earthMesh = new THREE.Mesh(new THREE.SphereGeometry(EARTH_SCENE_RADIUS, 64, 64), earthMat);
-        scene.add(earthMesh);
-
-        updateEarthTexture(); // Load initial texture
-
-        // ECEF Axes Helpers
-        const TARGET_AXIS_LENGTH_KM = 10000; // e.g., 10,000 km
-        const visualAxisExtentInSceneUnits = TARGET_AXIS_LENGTH_KM * KM_TO_SCENE_UNITS;
-        const headLength = visualAxisExtentInSceneUnits * 0.05; // Arrowhead 5% of total length
-        const headWidth = headLength * 0.4;   // Arrowhead width
-        // The ArrowHelper constructor takes the full length including the head.
-        // So, we pass visualAxisExtentInSceneUnits as the length.
-        const ecefAxisColor = 0x00ff00; // Green
-
-        // X-axis (points towards Greenwich Meridian in ECF)
-        ecefXAxisHelper = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), visualAxisExtentInSceneUnits, ecefAxisColor, headLength, headWidth);
-        scene.add(ecefXAxisHelper);
-
-        // Y-axis (ECF Y is 90 deg East of X in equatorial plane) - maps to Scene Z
-        ecefYAxisHelper = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 0), visualAxisExtentInSceneUnits, ecefAxisColor, headLength, headWidth);
-        scene.add(ecefYAxisHelper);
-
-        // Z-axis (points towards North Pole in ECF) - maps to Scene Y
-        ecefZAxisHelper = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), visualAxisExtentInSceneUnits, ecefAxisColor, headLength, headWidth);
-        scene.add(ecefZAxisHelper);
-
-
-        // Equator Line
-        const equatorRadius = EARTH_SCENE_RADIUS + 0.05; // Slightly above Earth's surface for visibility
-        const graticuleMaterial = new THREE.LineBasicMaterial({color: 0x00ff00}); // Green
-        const equatorGeometry = new THREE.BufferGeometry().setFromPoints(
-            new THREE.Path().absarc(0, 0, equatorRadius, 0, Math.PI * 2, false).getPoints(64)
+        const earthMat = new THREE.MeshPhongMaterial({color: 0xffffff}); // texture applied later
+        earthMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(EARTH_SCENE_RADIUS, 64, 64),
+            earthMat
         );
-        equatorLineMesh = new THREE.Line(equatorGeometry, graticuleMaterial);
-        equatorLineMesh.rotation.x = Math.PI / 2; // Rotate to lie on the XY plane (Earth's equatorial plane)
-        equatorLineMesh.userData.radius = equatorRadius; // Store for label positioning
-        scene.add(equatorLineMesh);
+        scene.add(earthMesh);
+        updateEarthTexture();
 
-        // Greenwich Meridian Line (simplified as a half-circle in XZ plane in ECF, which is XY in scene)
-        const meridianPoints = [];
-        const meridianSegments = 32; // Number of segments for the half-circle
-        for (let i = 0; i <= meridianSegments; i++) {
-            const phi = (i / meridianSegments) * Math.PI; // Angle from 0 to PI for a half-circle
-            // For Greenwich meridian, it's in the ECF XZ plane (scene XY plane, Y pointing North)
-            // X = radius * cos(angle_from_Z_axis), Y = radius * sin(angle_from_Z_axis)
-            meridianPoints.push(new THREE.Vector3(Math.sin(phi) * equatorRadius, Math.cos(phi) * equatorRadius, 0));
-        }
-        const meridianGeometry = new THREE.BufferGeometry().setFromPoints(meridianPoints);
-        greenwichMeridianLineMesh = new THREE.Line(meridianGeometry, graticuleMaterial);
-        // No rotation needed if points are defined in the scene's XY plane correctly
-        scene.add(greenwichMeridianLineMesh);
+        /* ───────── ECEF Axes (green) ───────── */
+        addECEFAxes(scene);
+        updateECEFAxesVisibility(simParams);
 
+        /* ───────── LVLH Orbit‑Frame (hidden until user toggles) ───────── */
+        orbitFrame = createOrbitFrame(scene);           // default 10 000 km length
+        setOrbitFrameVisibility(orbitFrame, false);     // start invisible
 
-        updateECEFAxesVisibility(); // Set initial visibility based on simParams
-
+        /* ───────── OrbitControls ───────── */
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = controlsConfig.enableDamping;
         controls.dampingFactor = controlsConfig.dampingFactor;
-        controls.minDistance = EARTH_SCENE_RADIUS * 1.2; // Prevent zooming inside Earth too much
-        controls.maxDistance = EARTH_SCENE_RADIUS * 25;  // Max zoom out
+        controls.minDistance = EARTH_SCENE_RADIUS * 0.4;   // prevent inside‑Earth zoom
+        controls.maxDistance = EARTH_SCENE_RADIUS * 20;    // generous zoom‑out
+        controls.enableZoom = true;
     }
+
 
     function initMercatorView() {
         mercatorContainer = document.getElementById("mercatorContainer");
@@ -585,6 +547,7 @@
         viewMercatorToggle = document.getElementById('viewMercatorToggle');
         highDefToggleElement = document.getElementById('highDefToggle');
         showECEFAxesToggleElement = document.getElementById('showECEFAxesToggle');
+        showOrbitFrameToggleElement = document.getElementById('showOrbitFrameToggle');
         showOrbitToggle = document.getElementById('showOrbitToggle');
 
         satelliteSelectDropdown = document.getElementById('satelliteSelect');
@@ -605,6 +568,7 @@
         viewMercatorToggle.checked = simParams.viewMercator;
         if (highDefToggleElement) highDefToggleElement.checked = simParams.useHighDefTexture;
         if (showECEFAxesToggleElement) showECEFAxesToggleElement.checked = simParams.showECEFAxes;
+        if (showOrbitFrameToggleElement) showOrbitFrameToggleElement.checked = simParams.showOrbitFrame;
         showOrbitToggle.checked = simParams.showOrbit;
 
         // Event Listeners
@@ -636,10 +600,16 @@
         if (showECEFAxesToggleElement) {
             showECEFAxesToggleElement.addEventListener('change', (e) => {
                 simParams.showECEFAxes = e.target.checked;
-                updateECEFAxesVisibility(); // Toggle axes and labels
+                updateECEFAxesVisibility(simParams); // Toggle axes and labels
             });
         }
 
+        if (showOrbitFrameToggleElement) {
+            showOrbitFrameToggleElement.addEventListener('change', e => {
+                simParams.showOrbitFrame = e.target.checked;
+                if (orbitFrame) setOrbitFrameVisibility(orbitFrame, simParams.showOrbitFrame);
+            });
+        }
 
         showOrbitToggle.addEventListener('change', (e) => {
             simParams.showOrbit = e.target.checked;
@@ -787,7 +757,7 @@
         console.log(`Attempting to load detailed model for NORAD ID: ${noradId}`);
         const newModel = await showSatellite(noradId, scene);
         //const newbeams = await buildAllBeamMeshes(noradId, newModel.userData.payload.transponders);
-        const newbeams = await buildAllBeams(noradId,currentSelectedSatellite, newModel.userData.payload.transponders);
+        const newbeams = await buildAllBeams(noradId, currentSelectedSatellite, newModel.userData.payload.transponders);
 
         if (newModel) {
             detailedSatelliteModel = newModel; // Store the THREE.Group
@@ -1124,234 +1094,176 @@
     function updateOrbitTrajectory(satData) {
         removeAllGeometry();
         if (!simParams.showOrbit || !satData || !satData.satrec) return;
-        const meanMotion = satData.satrec.no;
+
+        const meanMotion = satData.satrec.no;             // revs / min
         if (meanMotion === 0) {
             console.warn(`${satData.satellite_name} has zero mean motion.`);
             return;
         }
-        const periodMins = 1440 / meanMotion;
-        const segments = 14400;
-        const step = periodMins / segments;
-        const orbitPoints = [];
+
+        const periodMins = 1440 / meanMotion;             // minutes per revolution
+        const segments = 14400;                         // resolution
+        const stepMin = periodMins / segments;
+
+        const orbitPts = [];
         const now = new Date();
+
         for (let i = 0; i <= segments; i++) {
-            const future = new Date(now.getTime() + i * step * 60000);
-            const posVel = satellite.propagate(satData.satrec, future);
-            if (!posVel || !posVel.position) continue;
-            const {x, y, z} = posVel.position;
-            const kmToScene = EARTH_SCENE_RADIUS / EARTH_RADIUS_KM;
-            orbitPoints.push(new THREE.Vector3(x * kmToScene, z * kmToScene, y * kmToScene));
+            const t = new Date(now.getTime() + i * stepMin * 60000);
+            const pv = satellite.propagate(satData.satrec, t);
+            if (!pv || !pv.position) continue;
+
+            // compute GMST for this sample
+            const jday = satellite.jday(
+                t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate(),
+                t.getUTCHours(), t.getUTCMinutes(), t.getUTCSeconds());
+            const gmst = satellite.gstime(jday);
+
+            const ecf = satellite.eciToEcf(pv.position, gmst);
+            orbitPts.push(new THREE.Vector3(
+                ecf.x * KM_TO_SCENE_UNITS,
+                ecf.z * KM_TO_SCENE_UNITS,
+                ecf.y * KM_TO_SCENE_UNITS));
         }
-        if (orbitPoints.length < 2) {
-            console.warn(`Not enough points for orbit: ${orbitPoints.length}`);
+
+        if (orbitPts.length < 2) {
+            console.warn(`Not enough points for orbit: ${orbitPts.length}`);
             return;
         }
-        const geometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(orbitPts);
         const material = new THREE.LineBasicMaterial({color: 0xff0000});
         orbitLine = new THREE.Line(geometry, material);
         scene.add(orbitLine);
     }
 
-    function projectToScreenCoordinates(worldVector, camera, renderer) {
-        const vector = worldVector.clone();
-        vector.project(camera); // Project 3D point to normalized device coordinates (-1 to +1)
-
-        // Convert normalized device coordinates to screen coordinates
-        const x = (vector.x * 0.5 + 0.5) * renderer.domElement.clientWidth;
-        const y = (vector.y * -0.5 + 0.5) * renderer.domElement.clientHeight; // Y is inverted
-
-        return {x: x, y: y};
-    }
-
-
-    function update3DLabelsPosition() {
-        if (!simParams.showECEFAxes || !camera || !renderer || !simParams.view3D) {
-            // Hide all labels if axes are off, or no 3D view
-            if (labelXecrDiv) labelXecrDiv.style.display = 'none';
-            if (labelYecrDiv) labelYecrDiv.style.display = 'none';
-            if (labelZecrDiv) labelZecrDiv.style.display = 'none';
-            if (labelNorthPoleDiv) labelNorthPoleDiv.style.display = 'none';
-            if (labelEquatorLineDiv) labelEquatorLineDiv.style.display = 'none';
-            if (labelGreenwichMeridianDiv) labelGreenwichMeridianDiv.style.display = 'none';
-            return;
+    window.addEventListener('keydown', e => {
+        if (e.key === 'r') {            // press “r” to reset
+            controls.reset();             // OrbitControls’ built‑in reset
+            camera.position.set(...sceneConfig.camera.position);
+            controls.target.set(0, 0, 0);
         }
-
-        const TARGET_AXIS_LENGTH_KM = 10000;
-        const visualAxisExtentInSceneUnits = TARGET_AXIS_LENGTH_KM * KM_TO_SCENE_UNITS;
-        const labelOffset = 1.0; // Offset the label slightly beyond the arrow tip or line end
-        const labelVerticalOffset = 0.5; // For Equator and Meridian labels to float slightly above/distinct
-
-        // X ECR Axis Label (Scene X)
-        if (ecefXAxisHelper && labelXecrDiv) {
-            const posX = projectToScreenCoordinates(new THREE.Vector3(visualAxisExtentInSceneUnits + labelOffset, 0, 0), camera, renderer);
-            labelXecrDiv.style.left = `${posX.x}px`;
-            labelXecrDiv.style.top = `${posX.y}px`;
-            labelXecrDiv.style.display = 'block';
-        }
-        // Y ECR Axis Label (Scene Z)
-        if (ecefYAxisHelper && labelYecrDiv) {
-            const posY = projectToScreenCoordinates(new THREE.Vector3(0, 0, visualAxisExtentInSceneUnits + labelOffset), camera, renderer);
-            labelYecrDiv.style.left = `${posY.x}px`;
-            labelYecrDiv.style.top = `${posY.y}px`;
-            labelYecrDiv.style.display = 'block';
-        }
-        // Z ECR Axis Label (Scene Y - North Pole direction)
-        if (ecefZAxisHelper && labelZecrDiv) {
-            const posZ = projectToScreenCoordinates(new THREE.Vector3(0, visualAxisExtentInSceneUnits + labelOffset, 0), camera, renderer);
-            labelZecrDiv.style.left = `${posZ.x}px`;
-            labelZecrDiv.style.top = `${posZ.y}px`;
-            labelZecrDiv.style.display = 'block';
-        }
-
-        // North Pole Label (at the end of Z ECR axis, slightly above sphere)
-        if (labelNorthPoleDiv) {
-            const northPolePos = projectToScreenCoordinates(new THREE.Vector3(0, EARTH_SCENE_RADIUS + labelOffset, 0), camera, renderer);
-            labelNorthPoleDiv.style.left = `${northPolePos.x}px`;
-            labelNorthPoleDiv.style.top = `${northPolePos.y}px`;
-            labelNorthPoleDiv.style.display = 'block';
-        }
-
-        // Equator Line Label
-        if (equatorLineMesh && labelEquatorLineDiv && equatorLineMesh.userData.radius) {
-            // Position label on the equator line, at a point most visible to camera (e.g., closest point on equator to camera's XZ projection)
-            const cameraPosition = new THREE.Vector3();
-            camera.getWorldPosition(cameraPosition);
-            // Project camera position onto the equatorial plane (scene's XZ plane)
-            const cameraPosOnEquatorPlane = new THREE.Vector3(cameraPosition.x, 0, cameraPosition.z);
-            if (cameraPosOnEquatorPlane.lengthSq() < 0.001) { // If camera is directly above/below pole
-                cameraPosOnEquatorPlane.set(equatorLineMesh.userData.radius, 0, 0); // Default to a point on +X axis
-            } else {
-                cameraPosOnEquatorPlane.normalize().multiplyScalar(equatorLineMesh.userData.radius);
-            }
-            // Add a slight vertical offset for the label itself
-            const equatorLabelPos3D = new THREE.Vector3(cameraPosOnEquatorPlane.x, labelVerticalOffset, cameraPosOnEquatorPlane.z);
-
-            const equatorScreenPos = projectToScreenCoordinates(equatorLabelPos3D, camera, renderer);
-            labelEquatorLineDiv.style.left = `${equatorScreenPos.x}px`;
-            labelEquatorLineDiv.style.top = `${equatorScreenPos.y}px`;
-            labelEquatorLineDiv.style.display = 'block';
-        }
-
-        // Greenwich Meridian Line Label
-        if (greenwichMeridianLineMesh && labelGreenwichMeridianDiv && equatorLineMesh && equatorLineMesh.userData.radius) {
-            const r = equatorLineMesh.userData.radius; // Use equator radius for consistency
-            // Position label near the top of the Greenwich meridian arc (e.g., 30 degrees from North Pole along meridian)
-            // Meridian is in scene's XY plane. Angle from +Y (North).
-            const angleFromNorth = THREE.MathUtils.degToRad(30);
-            const meridianLabelPos3D = new THREE.Vector3(
-                r * Math.sin(angleFromNorth), // X component
-                r * Math.cos(angleFromNorth) + labelVerticalOffset, // Y component (towards North) + offset
-                0 // Z component (on the meridian plane)
-            );
-            const meridianScreenPos = projectToScreenCoordinates(meridianLabelPos3D, camera, renderer);
-            labelGreenwichMeridianDiv.style.left = `${meridianScreenPos.x}px`;
-            labelGreenwichMeridianDiv.style.top = `${meridianScreenPos.y}px`;
-            labelGreenwichMeridianDiv.style.display = 'block';
-        }
-    }
-
+    });
 
     function animate() {
-        requestAnimationFrame(animate);
-        const delta = clock.getDelta(); // Time since last frame, useful for animations
+        requestAnimationFrame(animate);// time since last frame
 
-        // --- Smooth camera flight handler ---
+        /*──────────────── Camera easing ────────────────*/
         if (cameraMove) {
             const now = clock.getElapsedTime();
-            const t = Math.min((now - cameraMove.startTime) / cameraMove.duration, 1); // Alpha clamped 0-1
-            const smoothAlpha = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // Ease-in-out quadratic
+            const t = Math.min((now - cameraMove.startTime) / cameraMove.duration, 1);
+            const smooth = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;     // ease‑in‑out quad
+            camera.position.lerpVectors(cameraMove.startCamPos, cameraMove.endCamPos, smooth);
+            controls.target.lerpVectors(cameraMove.startTarget, cameraMove.endTarget, smooth);
+            controls.update();
 
-            camera.position.lerpVectors(cameraMove.startCamPos, cameraMove.endCamPos, smoothAlpha);
-            controls.target.lerpVectors(cameraMove.startTarget, cameraMove.endTarget, smoothAlpha);
-            controls.update(); // Important for OrbitControls after manual camera/target change
-
-            if (t >= 1) {
-                cameraMove = null; // Flight finished
-                controls.enabled = true; // Re-enable controls
+            if (t >= 1) {                          // flight complete
+                cameraMove = null;
+                controls.enabled = true;
             }
-        } else {
-            if (controls && controls.enabled) controls.update(); // Standard controls update
+        } else if (controls && controls.enabled) {
+            controls.update();
         }
 
-
+        /*──────────────── Time & GMST ────────────────*/
         const currentTime = new Date();
-        const jdayCurrent = satellite.jday(currentTime.getUTCFullYear(), currentTime.getUTCMonth() + 1, currentTime.getUTCDate(), currentTime.getUTCHours(), currentTime.getUTCMinutes(), currentTime.getUTCSeconds());
+        const jdayCurrent = satellite.jday(
+            currentTime.getUTCFullYear(), currentTime.getUTCMonth() + 1, currentTime.getUTCDate(),
+            currentTime.getUTCHours(), currentTime.getUTCMinutes(), currentTime.getUTCSeconds());
         const gmstCurrent = satellite.gstime(jdayCurrent);
 
-        // Update TLE sprite positions
+        /*──────────────── Update TLE sprites ────────────────*/
         satellites.forEach(sat => {
-            if (sat.mesh && sat.mesh.visible && sat.satrec) { // Only update visible sprites with valid TLE
+            if (sat.mesh && sat.mesh.visible && sat.satrec) {
                 try {
-                    const posVel = satellite.propagate(sat.satrec, currentTime);
-                    if (posVel && posVel.position) {
-                        const ecf = satellite.eciToEcf(posVel.position, gmstCurrent);
-                        sat.mesh.position.set(ecf.x * KM_TO_SCENE_UNITS, ecf.z * KM_TO_SCENE_UNITS, ecf.y * KM_TO_SCENE_UNITS);
-                    }
-                } catch (e) {
-                    // console.warn(`Error propagating TLE for sprite ${sat.satellite_name}: ${e.message}`);
-                    // Consider making the sprite less prominent or showing an error state if propagation fails repeatedly
-                    if (sat.mesh) sat.mesh.visible = false; // Hide if problematic
+                    const pv = satellite.propagate(sat.satrec, currentTime);
+                    if (!pv || !pv.position) return;
+                    const ecf = satellite.eciToEcf(pv.position, gmstCurrent);
+                    sat.mesh.position.set(
+                        ecf.x * KM_TO_SCENE_UNITS,
+                        ecf.z * KM_TO_SCENE_UNITS,
+                        ecf.y * KM_TO_SCENE_UNITS
+                    );
+                } catch (_) {
+                    sat.mesh.visible = false;
                 }
             }
         });
 
-        // Update detailed satellite model position if it's active
-        if (detailedSatelliteModel && detailedSatelliteModel.visible && currentSelectedSatellite && currentSelectedSatellite.satrec) {
+        /*──────────────── Update detailed model ────────────────*/
+        if (detailedSatelliteModel && detailedSatelliteModel.visible &&
+            currentSelectedSatellite && currentSelectedSatellite.satrec) {
             try {
-                const posVel = satellite.propagate(currentSelectedSatellite.satrec, currentTime);
-                if (posVel && posVel.position) {
-                    const ecf = satellite.eciToEcf(posVel.position, gmstCurrent);
-                    detailedSatelliteModel.position.set(ecf.x * KM_TO_SCENE_UNITS, ecf.z * KM_TO_SCENE_UNITS, ecf.y * KM_TO_SCENE_UNITS);
+                const pv = satellite.propagate(currentSelectedSatellite.satrec, currentTime);
+                if (pv && pv.position) {
+                    const ecf = satellite.eciToEcf(pv.position, gmstCurrent);
+                    detailedSatelliteModel.position.set(
+                        ecf.x * KM_TO_SCENE_UNITS,
+                        ecf.z * KM_TO_SCENE_UNITS,
+                        ecf.y * KM_TO_SCENE_UNITS
+                    );
                 }
-            } catch (e) {
-                // console.warn(`[Detailed Model] Error updating position for ${currentSelectedSatellite.satellite_name}:`, e);
-                // If propagation fails, the model will stay at its last known position.
+            } catch (_) { /* keep last good pos */
             }
         }
 
+        /*──────────────── LVLH orbit‑frame arrows ────────────────*/
+        if (simParams.showOrbitFrame && orbitFrame &&
+            currentSelectedSatellite && currentSelectedSatellite.satrec) {
+            try {
+                setOrbitFrameVisibility(orbitFrame, simParams.showOrbitFrame);
+                const pv = satellite.propagate(currentSelectedSatellite.satrec, currentTime);
+                if (pv && pv.position && pv.velocity) {
+                    const ecfPos = satellite.eciToEcf(pv.position, gmstCurrent);
+                    const ecfVel = satellite.eciToEcf(pv.velocity, gmstCurrent);
 
+                    const posVec = new THREE.Vector3(
+                        ecfPos.x * KM_TO_SCENE_UNITS,
+                        ecfPos.z * KM_TO_SCENE_UNITS,
+                        ecfPos.y * KM_TO_SCENE_UNITS);
+
+                    const velVec = new THREE.Vector3(
+                        ecfVel.x * KM_TO_SCENE_UNITS,
+                        ecfVel.z * KM_TO_SCENE_UNITS,
+                        ecfVel.y * KM_TO_SCENE_UNITS);
+
+                    updateOrbitFrame(orbitFrame, posVec, velVec);
+                }
+            } catch (_) { /* ignore propagation hiccups */
+            }
+        }
+
+        /*──────────────── 3‑D vs Mercator views ────────────────*/
         const show3D = simParams.view3D;
         const showMercator = simParams.viewMercator;
 
-        if (renderer) renderer.domElement.style.display = show3D ? "block" : "none";
+        // 3‑D render
+        if (renderer) renderer.domElement.style.display = show3D ? 'block' : 'none';
+        if (show3D) {
+            renderer.render(scene, camera);
+            update3DLabelsPosition(camera, simParams);
+        } else {
+            // hide ECEF labels when 3‑D off
+            ['labelXecr', 'labelYecr', 'labelZecr',
+                'labelNorthPole', 'labelEquatorLine', 'labelGreenwichMeridian']
+                .forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+        }
 
+        // Mercator redraw
         if (mercatorContainer) {
             if (showMercator) {
-                mercatorContainer.style.display = "block";
-                mercatorContainer.classList.toggle("fullscreen", !show3D); // Add fullscreen class if 3D is hidden
-
-                if (mercatorCanvasElement && mapBackgroundDiv) {
-                    // Check if canvas dimensions need update (e.g., if container was resized)
-                    const currentMapContainerWidth = mapBackgroundDiv.clientWidth;
-                    const currentMapContainerHeight = mapBackgroundDiv.clientHeight;
-                    if (mercatorCanvasElement.width !== currentMapContainerWidth || mercatorCanvasElement.height !== currentMapContainerHeight) {
-                        mercatorCanvasElement.width = currentMapContainerWidth;
-                        mercatorCanvasElement.height = currentMapContainerHeight;
-                        // mapWidth and mapHeight might also need update if they are used elsewhere for calculations
-                        mapWidth = currentMapContainerWidth;
-                        mapHeight = currentMapContainerHeight;
-                    }
-                    updateMercatorMap(); // Redraw map content
-                }
+                mercatorContainer.style.display = 'block';
+                mercatorContainer.classList.toggle('fullscreen', !show3D);
+                updateMercatorMap();        // uses current canvas size
             } else {
-                mercatorContainer.style.display = "none";
+                mercatorContainer.style.display = 'none';
             }
         }
-
-        if (show3D) {
-            // controls.update() is handled by cameraMove or its else block
-            if (renderer && scene && camera) renderer.render(scene, camera);
-            update3DLabelsPosition(); // Update HTML label positions
-        } else {
-            // Ensure 3D labels are hidden if 3D view is off
-            if (labelXecrDiv) labelXecrDiv.style.display = 'none';
-            if (labelYecrDiv) labelYecrDiv.style.display = 'none';
-            if (labelZecrDiv) labelZecrDiv.style.display = 'none';
-            if (labelNorthPoleDiv) labelNorthPoleDiv.style.display = 'none';
-            if (labelEquatorLineDiv) labelEquatorLineDiv.style.display = 'none';
-            if (labelGreenwichMeridianDiv) labelGreenwichMeridianDiv.style.display = 'none';
-        }
     }
+
 
     function drawDayNightTerminatorMercator(ctx, width, height) {
         const now = new Date();
@@ -1544,7 +1456,7 @@
 
             setupHTMLControls(); // Setup UI controls and their event listeners
             updateSatelliteList(); // Populate dropdowns and filter based on initial simParams
-            updateECEFAxesVisibility(); // Set initial visibility of ECEF axes and labels
+            updateECEFAxesVisibility(simParams); // Set initial visibility of ECEF axes and labels
 
             // Initial orbit display based on simParams and if a satellite is pre-selected (though usually not)
             if (simParams.showOrbit && currentSelectedSatellite) {
