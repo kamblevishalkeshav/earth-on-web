@@ -26,6 +26,7 @@
 
 <script type="module">
 
+    let usingLocalAssets;
     let GITHUB_REPO_RAW_BASE_URL = "https://raw.githubusercontent.com/arcazj/openbexi_earth_orbit/master/";
     let CONFIG_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "config/";
     let TLE_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "json/tle/";
@@ -34,27 +35,12 @@
 
     import * as THREE from 'three';
     import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+    import {loadConfigs, fetchJSON, getFullGitHubUrl} from './js/SatelliteConfigurationLoader.js';
     import {updateSatelliteInfo, satelliteMenuLoader} from './js/SatelliteMenuLoader.js';
-    import {
-        showSatellite,
-        buildAllBeams,
-        clearCurrentDetailedSat
-    } from './js/satelliteModelLoader.js';
-    import {
-        addECEFAxes,
-        update3DLabelsPosition,
-        updateECEFAxesVisibility
-    } from './js/EarthFrameLoader.js';
-    import {
-        createOrbitFrame,
-        updateOrbitFrame,
-        setOrbitFrameVisibility
-    } from './js/orbitFrameLoader.js';
-    import {
-        EARTH_RADIUS_KM,
-        KM_TO_SCENE_UNITS,
-        EARTH_SCENE_RADIUS
-    } from './js/SatelliteConstantLoader.js';
+    import {showSatellite, buildAllBeams, clearCurrentDetailedSat} from './js/satelliteModelLoader.js';
+    import {addECEFAxes, update3DLabelsPosition, updateECEFAxesVisibility} from './js/EarthFrameLoader.js';
+    import {createOrbitFrame, updateOrbitFrame, setOrbitFrameVisibility} from './js/orbitFrameLoader.js';
+    import {EARTH_RADIUS_KM, KM_TO_SCENE_UNITS, EARTH_SCENE_RADIUS} from './js/SatelliteConstantLoader.js';
 
     // Load menu
     const versionNumber = "1.0h"; // Updated version
@@ -62,11 +48,8 @@
     const versionText = `version ${versionNumber} - hosted at`;
     document.getElementById('ob_menu').innerHTML = satelliteMenuLoader();
 
-    let usingLocalAssets = false;
-
     let scene, camera, renderer, earthMesh, controls;
-    let earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig;
-    let globalScale;
+    let earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig,globalScale;
     let mercatorCtx, mapWidth = 400, mapHeight = 200;
     let satellites = [];
     let orbitLine = null;
@@ -97,124 +80,8 @@
     let controlsContainerElement, menuToggleBtnElement, versionDisplayElement;
     let labelXecrDiv, labelYecrDiv, labelZecrDiv, labelNorthPoleDiv, labelEquatorLineDiv, labelGreenwichMeridianDiv;
 
-    function getFullGitHubUrl(rel) {
-        if (!rel || typeof rel !== 'string') return usingLocalAssets ? rel.replace(/^\//, '') : null;
-        if (rel.startsWith('http')) return rel;
-        return (usingLocalAssets ? '' : GITHUB_REPO_RAW_BASE_URL) + rel.replace(/^\//, '');
-    }
-
-    window.getFullGitHubUrl = getFullGitHubUrl;
-
-    async function fetchJSON(url) {
-        try {
-            const r = await fetch(url);
-            if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-            return await r.json();
-        } catch (err) {
-            //console.error('[fetchJSON]', url, err);
-            return url.includes('/tle/') ? [] : {};
-        }
-    }
-
-    window.fetchJSON = fetchJSON; // Make it available for satelliteModelLoader
-
     function isMobileDevice() {
         return /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(navigator.userAgent || navigator.vendor || window.opera);
-    }
-
-    async function loadConfigs() {
-        console.log("Attempting to load configurations from GitHub:", CONFIG_BASE_URL);
-        let primaryLoadSuccess = false;
-        try {
-            const results = await Promise.all([
-                fetchJSON(CONFIG_BASE_URL + 'earth.json'),
-                fetchJSON(CONFIG_BASE_URL + 'constants.json'),
-                fetchJSON(CONFIG_BASE_URL + 'satellite.json'),
-                fetchJSON(CONFIG_BASE_URL + 'scene.json'),
-                fetchJSON(CONFIG_BASE_URL + 'controls.json')
-            ]);
-            [earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig] = results;
-
-            if (!earthConfig || Object.keys(earthConfig).length === 0) {
-                throw new Error("GitHub config load resulted in empty critical config (e.g., earth.json).");
-            }
-            console.log("Configurations loaded successfully from GitHub.");
-            primaryLoadSuccess = true;
-
-        } catch (githubError) {
-            //console.warn("GitHub configuration load failed:", githubError.message, "Attempting local fallback.");
-            usingLocalAssets = true;
-            GITHUB_REPO_RAW_BASE_URL = ""; // Clear the base URL to use relative paths
-            CONFIG_BASE_URL = "config/";
-            TLE_BASE_URL = "json/tle/";
-            SATELLITES_BASE_URL = "json/satellites/"; // Local path for satellite models
-            window.SATELLITE_MODELS_BASE_URL = SATELLITES_BASE_URL; // Update for loader
-
-            try {
-                const results = await Promise.all([
-                    fetchJSON(CONFIG_BASE_URL + 'earth.json'),
-                    fetchJSON(CONFIG_BASE_URL + 'constants.json'),
-                    fetchJSON(CONFIG_BASE_URL + 'satellite.json'),
-                    fetchJSON(CONFIG_BASE_URL + 'scene.json'),
-                    fetchJSON(CONFIG_BASE_URL + 'controls.json')
-                ]);
-                [earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig] = results;
-
-                if (!earthConfig || Object.keys(earthConfig).length === 0) {
-                    throw new Error("Local config load also resulted in empty critical config.");
-                }
-                console.log("Configurations loaded successfully from local fallback.");
-                primaryLoadSuccess = true;
-            } catch (localError) {
-                //console.error("Both GitHub and local configuration loads failed:", localError.message, "Using hardcoded fallbacks.");
-            }
-        }
-
-        if (!primaryLoadSuccess) {
-            // Hardcoded fallbacks (ensure these paths are valid or use placeholders)
-            earthConfig = {
-                diameter: EARTH_RADIUS_KM * 2,
-                texture: 'textures/1_earth_16k.jpg', // Placeholder if path invalid
-                textureLight: 'textures/earthmap1k_light.jpg' // Placeholder if path invalid
-            };
-            satelliteConfig = {
-                icon: 'icons/ob_satellite.png', // Placeholder if path invalid
-                scale: [0.1, 0.1, 0.1],
-                mercatorIcon: 'icons/ob_satellite.png' // Placeholder if path invalid
-            };
-            sceneConfig = {
-                camera: {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]},
-                ambientLight: {color: 0xffffff, intensity: 0.5},
-                directionalLight: {color: 0xffffff, intensity: 1, position: [5, 3, 5]}
-            };
-            controlsConfig = {enableDamping: true, dampingFactor: 0.05};
-            constantsConfig = {}; // Should be fine as empty
-            // Potentially show a user-facing error message here
-            const errorDiv = document.createElement('div');
-            errorDiv.style.cssText = "position:fixed; top:10px; left:10px; padding:10px; background:red; color:white; z-index:1000;";
-            errorDiv.innerText = "Error loading configurations. Using default settings. App functionality may be limited.";
-            document.body.appendChild(errorDiv);
-            setTimeout(() => errorDiv.remove(), 5000);
-        }
-
-        // Ensure defaults for critical configs if still missing after load attempts
-        earthConfig.diameter = earthConfig.diameter || EARTH_RADIUS_KM * 2;
-        earthConfig.texture = earthConfig.texture || 'textures/1_earth_16k.jpg';
-        earthConfig.textureLight = earthConfig.textureLight || 'textures/earthmap1k_light.jpg';
-        satelliteConfig.icon = satelliteConfig.icon || 'icons/ob_satellite.png';
-        satelliteConfig.scale = satelliteConfig.scale || [0.1, 0.1, 0.1];
-        satelliteConfig.mercatorIcon = satelliteConfig.mercatorIcon || 'icons/ob_satellite.png';
-        sceneConfig.camera = sceneConfig.camera || {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]};
-        sceneConfig.ambientLight = sceneConfig.ambientLight || {color: 0xffffff, intensity: 0.5};
-        sceneConfig.directionalLight = sceneConfig.directionalLight || {
-            color: 0xffffff,
-            intensity: 1,
-            position: [5, 3, 5]
-        };
-        controlsConfig.enableDamping = controlsConfig.enableDamping !== undefined ? controlsConfig.enableDamping : true;
-        controlsConfig.dampingFactor = controlsConfig.dampingFactor || 0.05;
-
-        globalScale = EARTH_SCENE_RADIUS / (earthConfig.diameter / 2);
     }
 
     function updateEarthTexture() {
@@ -373,7 +240,6 @@
             };
         }
     }
-
 
     async function setupTLESatellites() {
         console.log("Attempting to load TLE data from:", TLE_BASE_URL);
@@ -895,7 +761,7 @@
             const size = new THREE.Vector3();
             bbox.getSize(size);
             const modelDiameter = Math.max(size.x, size.y, size.z, 0.5 * KM_TO_SCENE_UNITS * 1000);
-            distance = modelDiameter * 3;
+            distance = modelDiameter * 45;
 
             // Make sure we never get *closer* than the sprite framing distance
             distance = Math.max(distance, EARTH_SCENE_RADIUS * 0.5);
@@ -1090,51 +956,62 @@
         }
         // Add removal for other types of geometry if needed
     }
-
     function updateOrbitTrajectory(satData) {
-        removeAllGeometry();
         if (!simParams.showOrbit || !satData || !satData.satrec) return;
 
-        const meanMotion = satData.satrec.no;             // radians per minute
-        if (meanMotion === 0) {
-            console.warn(`${satData.satellite_name} has zero mean motion.`);
-            return;
+        const meanMotion = satData.satrec.no;
+        const basePeriod = (2 * Math.PI) / meanMotion; // fundamental orbital period in minutes
+
+        let orbitType, periodMinutes;
+        if (basePeriod > 1400 && basePeriod < 1470) {
+            orbitType = 'GEO';
+            periodMinutes = basePeriod; // one revolution
+        } else if (basePeriod < 225) {
+            orbitType = 'LEO';
+            periodMinutes = (24 * Math.PI) / meanMotion; // 12 revs
+        } else {
+            orbitType = 'MEO';
+            periodMinutes = (4 * Math.PI) / meanMotion; // 2 revs
         }
 
-        const periodMins = (2 * Math.PI) / meanMotion;    // minutes per revolution
-        const segments = 14400;                         // resolution
-        const stepMin = periodMins / segments;
-
-        const orbitPts = [];
+        const numPoints = 360;
+        const deltaT = periodMinutes / numPoints;
         const now = new Date();
+        const orbitPoints = [];
 
-        for (let i = 0; i <= segments; i++) {
-            const t = new Date(now.getTime() + i * stepMin * 60000);
+        for (let i = 0; i <= numPoints; i++) {
+            const t = new Date(now.getTime() + i * deltaT * 60000);
             const pv = satellite.propagate(satData.satrec, t);
             if (!pv || !pv.position) continue;
 
-            // compute GMST for this sample
-            const jday = satellite.jday(
-                t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate(),
-                t.getUTCHours(), t.getUTCMinutes(), t.getUTCSeconds());
-            const gmst = satellite.gstime(jday);
+            let pos = pv.position;
+            if (orbitType !== 'GEO') {
+                const gmst = satellite.gstime(t);
+                pos = satellite.eciToEcf(pos, gmst);
+            }
 
-            const ecf = satellite.eciToEcf(pv.position, gmst);
-            orbitPts.push(new THREE.Vector3(
-                ecf.x * KM_TO_SCENE_UNITS,
-                ecf.z * KM_TO_SCENE_UNITS,
-                ecf.y * KM_TO_SCENE_UNITS));
+            const scale = KM_TO_SCENE_UNITS;
+            orbitPoints.push(new THREE.Vector3(
+                pos.x * scale,
+                pos.z * scale,
+                pos.y * scale
+            ));
         }
 
-        if (orbitPts.length < 2) {
-            console.warn(`Not enough points for orbit: ${orbitPts.length}`);
-            return;
+        if (typeof orbitLine !== 'undefined' && orbitLine) {
+            scene.remove(orbitLine);
+            orbitLine.geometry.dispose();
+            orbitLine.material.dispose();
         }
 
-        const geometry = new THREE.BufferGeometry().setFromPoints(orbitPts);
-        const material = new THREE.LineBasicMaterial({color: 0xff0000});
+        const geometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+        const material = new THREE.LineBasicMaterial({
+            color: orbitType === 'GEO' ? 0xff0000 : 0xff0000
+        });
+
         orbitLine = new THREE.Line(geometry, material);
         scene.add(orbitLine);
+        return orbitLine;
     }
 
     window.addEventListener('keydown', e => {
@@ -1448,7 +1325,22 @@
 
     async function start() {
         try {
-            await loadConfigs(); // Load all JSON configurations first
+            const config = await loadConfigs(GITHUB_REPO_RAW_BASE_URL);
+            ({
+                CONFIG_BASE_URL,
+                TLE_BASE_URL,
+                SATELLITES_BASE_URL,
+                earthConfig,
+                constantsConfig,
+                satelliteConfig,
+                sceneConfig,
+                controlsConfig,
+                globalScale
+            } = config);
+
+
+            window.SATELLITE_MODELS_BASE_URL = SATELLITES_BASE_URL;
+
             // Now that configs are loaded (including sceneConfig), initialize 3D environment
             init3D();
             initMercatorView(); // Initialize Mercator view (can be done after 3D)

@@ -186,9 +186,9 @@ function buildSatellite(g, tex, lbls, font) {
     if (g.solar_panels) root.add(panelGroup(g.solar_panels, tex));
     if (g.antennas) root.add(antennaGroup(g.antennas, lbls));
     if (g.thrusters) root.add(thrusterGroup(g.thrusters));
-    root.rotation.set(0, Math.PI / 3.75, Math.PI / 2);
-    root.scale.set(0.2, 0.2, 0.2);
-    root.add(new THREE.AxesHelper(1000));
+    //root.rotation.set(0, Math.PI / 3.75, Math.PI / 2);
+    //root.scale.set(0.2, 0.2, 0.2);
+    //root.add(new THREE.AxesHelper(1000));
     return root;
 }
 
