@@ -1095,13 +1095,13 @@
         removeAllGeometry();
         if (!simParams.showOrbit || !satData || !satData.satrec) return;
 
-        const meanMotion = satData.satrec.no;             // revs / min
+        const meanMotion = satData.satrec.no;             // radians per minute
         if (meanMotion === 0) {
             console.warn(`${satData.satellite_name} has zero mean motion.`);
             return;
         }
 
-        const periodMins = 1440 / meanMotion;             // minutes per revolution
+        const periodMins = (2 * Math.PI) / meanMotion;    // minutes per revolution
         const segments = 14400;                         // resolution
         const stepMin = periodMins / segments;
 
