@@ -16,7 +16,7 @@ export function getFullGitHubUrlOLD(rel, base) {
     if (rel.startsWith('http')) return rel;
     return (usingLocalAssets ? '' : base) + rel.replace(/^\//, '');
 }
-export function getFullGitHubUrl(relativePath) {
+export function getFullGitHubUrl(relativePath,base) {
     if (!relativePath || typeof relativePath !== 'string') {
         console.warn("getFullGitHubUrl: received invalid path:", relativePath);
         return usingLocalAssets ? relativePath.replace(/^\//, '') : null;
@@ -27,7 +27,7 @@ export function getFullGitHubUrl(relativePath) {
     if (usingLocalAssets) {
         return relativePath.replace(/^\//, '');
     }
-    return GITHUB_REPO_RAW_BASE_URL + relativePath.replace(/^\//, '');
+    return base + relativePath.replace(/^\//, '');
 }
 
 /**
