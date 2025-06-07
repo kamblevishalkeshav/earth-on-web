@@ -2,7 +2,9 @@
 import * as THREE from 'three';
 import {
     EARTH_SCENE_RADIUS,
-    KM_TO_SCENE_UNITS
+    KM_TO_SCENE_UNITS,
+    WGS84_A_KM,
+    WGS84_F
 } from './SatelliteConstantLoader.js';
 
 /* ─────────── Constants ─────────── */
@@ -15,6 +17,10 @@ const LABEL_VERTICAL_OFFSET = 0.5;
 const HEAD_LENGTH           = VISUAL_AXIS_EXTENT * 0.05;
 const HEAD_WIDTH            = HEAD_LENGTH * 0.4;
 const AXIS_COLOR            = 0x00ff00;
+
+// WGS84 ellipsoid constants for ECEF calculations
+const a  = WGS84_A_KM;                         // semi-major axis (km)
+const e2 = WGS84_F * (2 - WGS84_F);            // first eccentricity squared
 
 /* ─────────── Module‑scoped state ─────────── */
 const helpers = {};               // ArrowHelpers & graticule meshes
