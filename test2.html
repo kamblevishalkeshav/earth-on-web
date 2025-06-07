@@ -1423,12 +1423,12 @@
     function updateOrbitTrajectory(satData) {
         removeAllGeometry();
         if (!simParams.showOrbit || !satData || !satData.satrec) return;
-        const meanMotion = satData.satrec.no;
+        const meanMotion = satData.satrec.no;             // radians per minute
         if (meanMotion === 0) {
             console.warn(`${satData.satellite_name} has zero mean motion.`);
             return;
         }
-        const periodMins = 1440 / meanMotion;
+        const periodMins = (2 * Math.PI) / meanMotion;
         const segments = 14400;
         const step = periodMins / segments;
         const orbitPoints = [];
