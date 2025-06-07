@@ -1,7 +1,7 @@
 // SatelliteConfigurationLoader.js
 // Load satellite visualization configuration from GitHub or local fallback
 
-import { EARTH_RADIUS_KM, EARTH_SCENE_RADIUS } from './SatelliteConstantLoader.js';
+import {EARTH_RADIUS_KM, EARTH_SCENE_RADIUS} from './SatelliteConstantLoader.js';
 
 export let usingLocalAssets = false;
 
@@ -11,12 +11,7 @@ export let usingLocalAssets = false;
  * @param {string} base - Base URL (e.g., GITHUB_REPO_RAW_BASE_URL)
  * @returns {string|null}
  */
-export function getFullGitHubUrlOLD(rel, base) {
-    if (!rel || typeof rel !== 'string') return usingLocalAssets ? rel.replace(/^\//, '') : null;
-    if (rel.startsWith('http')) return rel;
-    return (usingLocalAssets ? '' : base) + rel.replace(/^\//, '');
-}
-export function getFullGitHubUrl(relativePath,base) {
+export function getFullGitHubUrl(relativePath, base) {
     if (!relativePath || typeof relativePath !== 'string') {
         console.warn("getFullGitHubUrl: received invalid path:", relativePath);
         return usingLocalAssets ? relativePath.replace(/^\//, '') : null;
@@ -107,14 +102,14 @@ export async function loadConfigs(GITHUB_REPO_RAW_BASE_URL) {
     }
 
     // Final fallback/default fills
-    earthConfig.diameter      ||= EARTH_RADIUS_KM * 2;
-    earthConfig.texture       ||= 'textures/1_earth_16k.jpg';
-    earthConfig.textureLight  ||= 'textures/earthmap1k_light.jpg';
-    satelliteConfig.icon      ||= 'icons/ob_satellite.png';
-    satelliteConfig.scale     ||= [0.1, 0.1, 0.1];
+    earthConfig.diameter ||= EARTH_RADIUS_KM * 2;
+    earthConfig.texture ||= 'textures/1_earth_16k.jpg';
+    earthConfig.textureLight ||= 'textures/earthmap1k_light.jpg';
+    satelliteConfig.icon ||= 'icons/ob_satellite.png';
+    satelliteConfig.scale ||= [0.1, 0.1, 0.1];
     satelliteConfig.mercatorIcon ||= 'icons/ob_satellite.png';
-    sceneConfig.camera        ||= {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]};
-    sceneConfig.ambientLight  ||= {color: 0xffffff, intensity: 0.5};
+    sceneConfig.camera ||= {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]};
+    sceneConfig.ambientLight ||= {color: 0xffffff, intensity: 0.5};
     sceneConfig.directionalLight ||= {color: 0xffffff, intensity: 1, position: [5, 3, 5]};
     controlsConfig.enableDamping ??= true;
     controlsConfig.dampingFactor ||= 0.05;

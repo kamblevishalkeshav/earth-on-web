@@ -49,7 +49,7 @@
     document.getElementById('ob_menu').innerHTML = satelliteMenuLoader();
 
     let scene, camera, renderer, earthMesh, controls;
-    let earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig,globalScale;
+    let earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig, globalScale;
     let mercatorCtx, mapWidth = 400, mapHeight = 200;
     let satellites = [];
     let orbitLine = null;
@@ -90,8 +90,8 @@
             return;
         }
 
-        const hdTextureFullUrl = getFullGitHubUrl(earthConfig.texture);
-        const lightTextureFullUrl = getFullGitHubUrl(earthConfig.textureLight);
+        const hdTextureFullUrl = getFullGitHubUrl(earthConfig.texture, GITHUB_REPO_RAW_BASE_URL);
+        const lightTextureFullUrl = getFullGitHubUrl(earthConfig.textureLight, GITHUB_REPO_RAW_BASE_URL);
         const textureToLoad = simParams.useHighDefTexture ? hdTextureFullUrl : lightTextureFullUrl;
 
         if (!textureToLoad) {
@@ -197,7 +197,7 @@
         mercatorCanvasElement.height = mapHeight;
         mercatorCtx = mercatorCanvasElement.getContext("2d");
 
-        const remoteMapBgUrl = getFullGitHubUrl('textures/earthmap1k.jpg');
+        const remoteMapBgUrl = getFullGitHubUrl('textures/earthmap1k.jpg', GITHUB_REPO_RAW_BASE_URL);
 
         if (remoteMapBgUrl) {
             const img = new Image();
@@ -217,7 +217,7 @@
             mapBackgroundDiv.classList.add('fallback-css');
         }
 
-        const mercatorIconFullUrl = getFullGitHubUrl(satelliteConfig.mercatorIcon || 'icons/ob_satellite.png');
+        const mercatorIconFullUrl = getFullGitHubUrl(satelliteConfig.mercatorIcon || 'icons/ob_satellite.png', GITHUB_REPO_RAW_BASE_URL);
         if (mercatorIconFullUrl) {
             mercatorSatIcon.crossOrigin = "Anonymous";
             mercatorSatIcon.onload = () => {
@@ -277,7 +277,7 @@
                 }
             }
 
-            const satIconFullUrl = getFullGitHubUrl(satelliteConfig.icon || 'icons/ob_satellite.png');
+            const satIconFullUrl = getFullGitHubUrl(satelliteConfig.icon || 'icons/ob_satellite.png', GITHUB_REPO_RAW_BASE_URL);
             let satMaterial;
 
             if (!satIconFullUrl) {
@@ -957,6 +957,7 @@
         }
         // Add removal for other types of geometry if needed
     }
+
     function updateOrbitTrajectory(satData) {
         if (!simParams.showOrbit || !satData || !satData.satrec) return;
 
