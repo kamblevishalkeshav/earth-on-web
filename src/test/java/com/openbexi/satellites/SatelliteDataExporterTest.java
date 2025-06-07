@@ -1,14 +1,16 @@
-import static org.junit.jupiter.api.Assertions.assertEquals;
+package com.openbexi.satellites;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SatelliteDataExporterTest {
 
@@ -39,10 +41,10 @@ public class SatelliteDataExporterTest {
         Path file = tempDir.resolve(Paths.get("json", "tle", "satellite_launch_dates.json"));
         Files.createDirectories(file.getParent());
         Files.writeString(file,
-                "[{\"name\":\"TEST\",\"norad_id\":\"12345\",\"launch_date\":\"2024-01-01\"}]");
+                "[{\"name\":\"TEST\",\"norad_id\":\"39188\",\"launch_date\":\"2013-06-25\"}]");
 
-        String result = invoke("12345");
-        assertEquals("2024-01-01", result);
+        String result = invoke("39188");
+        assertEquals("2013-06-25", result);
     }
 
     @Test
