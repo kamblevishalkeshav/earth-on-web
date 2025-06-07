@@ -28,13 +28,6 @@ Below are visualizations of OneWeb and Starlink satellite constellations:
 - Adjustable inclination and rotation effects for LEO and MEO satellites.
 
 # Roadmap
-The Mercator view is still a work in progress. I haven’t yet found the right approach or the right prompt—to get helpful guidance from ChatGPT to complete it. I'm currently using the O3 version with deep thinking enabled.
-
-Okay, I can help you craft a comprehensive README.md file for your openbexi_earth_orbit GitHub repository. A good README is crucial for helping others understand, use, and potentially contribute to your project.
-
-Based on the features and structure we've developed, here's a draft for your README.md. You can copy and paste this into a file named README.md at the root of your GitHub repository.
-
-Markdown
 
 # OpenBEXI Earth Orbit Visualizer
 
