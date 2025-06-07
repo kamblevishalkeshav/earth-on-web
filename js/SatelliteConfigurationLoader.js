@@ -11,10 +11,23 @@ export let usingLocalAssets = false;
  * @param {string} base - Base URL (e.g., GITHUB_REPO_RAW_BASE_URL)
  * @returns {string|null}
  */
-export function getFullGitHubUrl(rel, base) {
+export function getFullGitHubUrlOLD(rel, base) {
     if (!rel || typeof rel !== 'string') return usingLocalAssets ? rel.replace(/^\//, '') : null;
     if (rel.startsWith('http')) return rel;
     return (usingLocalAssets ? '' : base) + rel.replace(/^\//, '');
+}
+export function getFullGitHubUrl(relativePath) {
+    if (!relativePath || typeof relativePath !== 'string') {
+        console.warn("getFullGitHubUrl: received invalid path:", relativePath);
+        return usingLocalAssets ? relativePath.replace(/^\//, '') : null;
+    }
+    if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+        return relativePath;
+    }
+    if (usingLocalAssets) {
+        return relativePath.replace(/^\//, '');
+    }
+    return GITHUB_REPO_RAW_BASE_URL + relativePath.replace(/^\//, '');
 }
 
 /**
