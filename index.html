@@ -958,8 +958,88 @@
         // Add removal for other types of geometry if needed
     }
 
+    function getOrbitECIPoints(tleLine1, tleLine2, startTime, endTime, timeStepMinutes) {
+        const satrec = satellite.twoline2satrec(tleLine1, tleLine2);
+
+        // Error handling for TLE parsing
+        if (!satrec) {
+            console.error("Error: Could not parse TLE data.");
+            // Depending on application flow, might return null, an empty array, or throw an error
+            return;
+        }
+        // Check for specific TLE parsing errors if satrec.error is populated by twoline2satrec
+        // (Note: satellite.js typically sets satrec.error during propagation, not always during parsing)
+
+        let  orbitECIPoints =null;
+        let currentTime = new Date(startTime.getTime()); // Create a mutable copy of startTime
+
+        while (currentTime <= endTime) {
+            // Propagate to the current time to get ECI position and velocity
+            // The position is in ECI coordinates (TEME frame), in kilometers.
+            const positionAndVelocity = satellite.propagate(satrec, currentTime);
+
+            if (positionAndVelocity && typeof positionAndVelocity.position === 'object' && positionAndVelocity.position !== null) {
+                // Add the ECI position object {x, y, z} to our array
+                orbitECIPoints.push(positionAndVelocity.position);
+            } else {
+                // Propagation might fail if, for example, the satellite has decayed
+                // satrec.error provides a numerical code for the error type
+                // (Refer to satellite.js documentation for SatRecError enum values)
+                let errorMessage = "Propagation failed";
+                if (satrec.error && satellite.SatRecError) { // Check if SatRecError enum exists
+                    // Attempt to get a string representation if available (not standard in satellite.js)
+                    // Or handle based on numeric satrec.error codes directly
+                    switch (satrec.error) {
+                        case satellite.SatRecError.Ok: // Should not happen if positionAndVelocity is null/invalid
+                            errorMessage = "Propagation OK but no position data.";
+                            break;
+                        case satellite.SatRecError.MeanElements:
+                            errorMessage = "Propagation failed: Mean elements, check TLE.";
+                            break;
+                        case satellite.SatRecError.LockheedProp:
+                            errorMessage = "Propagation failed: Lockheed propagator error.";
+                            break;
+                        case satellite.SatRecError.NearSingular:
+                            errorMessage = "Propagation failed: Near singular elements.";
+                            break;
+                        case satellite.SatRecError.NoSupport:
+                            errorMessage = "Propagation failed: No support for this TLE.";
+                            break;
+                        case satellite.SatRecError.Recovered:
+                            errorMessage = "Propagation recovered but position might be suspect.";
+                            // Decide if to include this point or not
+                            break;
+                        case satellite.SatRecError.Decayed:
+                            errorMessage = `Satellite decayed at or before ${currentTime.toISOString()}. No further points will be generated.`;
+                            console.warn(errorMessage);
+                            // Optionally, break the loop if the satellite has decayed
+                            // and no further valid points can be generated.
+                            return orbitECIPoints; // Return points up to decay
+                        default:
+                            errorMessage = `Propagation failed with error code ${satrec.error}.`;
+                    }
+                }
+                console.warn(`Warning for satellite defined by TLE starting with "${tleLine1.substring(0, 20)}..." at ${currentTime.toISOString()}: ${errorMessage}`);
+                // Depending on requirements, one might choose to break, continue, or push a null/special marker.
+                // For a continuous orbit line, it's often better to stop generating points after a persistent failure.
+            }
+
+            // Increment current time by the time step
+            currentTime.setMinutes(currentTime.getMinutes() + timeStepMinutes);
+        }
+
+        // Return the array of ECI coordinate points
+        return orbitECIPoints;
+    }
+
     function updateOrbitTrajectory(satData) {
         if (!simParams.showOrbit || !satData || !satData.satrec) return;
+
+        let currentTime = new Date();
+        const orbitDurationHours = 6; // Generate 6 hours of orbit path
+        //const endTime = new Date(currentTime.getTime() + orbitDurationHours * 60 * 60 * 1000);
+        //const timeStep = 1; // Calculate a point every 1 minute
+        //const orbitECIPoints= getOrbitECIPoints(satData.tle_line1, satData.tle_line2, currentTime, endTime, timeStep);
 
         const meanMotion = satData.satrec.no;
         const basePeriod = (2 * Math.PI) / meanMotion; // fundamental orbital period in minutes
@@ -1134,11 +1214,23 @@
         // Mercator redraw
         if (mercatorContainer) {
             if (showMercator) {
-                mercatorContainer.style.display = 'block';
-                mercatorContainer.classList.toggle('fullscreen', !show3D);
-                updateMercatorMap();        // uses current canvas size
+                mercatorContainer.style.display = "block";
+                if (!show3D) {
+                    mercatorContainer.classList.add("fullscreen");
+                } else {
+                    mercatorContainer.classList.remove("fullscreen");
+                }
+                if (mercatorCanvasElement && mapBackgroundDiv) {
+                    const currentMapContainerWidth = mapBackgroundDiv.clientWidth;
+                    const currentMapContainerHeight = mapBackgroundDiv.clientHeight;
+                    if (mercatorCanvasElement.width !== currentMapContainerWidth || mercatorCanvasElement.height !== currentMapContainerHeight) {
+                        mercatorCanvasElement.width = currentMapContainerWidth;
+                        mercatorCanvasElement.height = currentMapContainerHeight;
+                    }
+                    updateMercatorMap();
+                }
             } else {
-                mercatorContainer.style.display = 'none';
+                mercatorContainer.style.display = "none";
             }
         }
     }
