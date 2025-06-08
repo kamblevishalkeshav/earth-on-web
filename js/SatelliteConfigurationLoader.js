@@ -6,8 +6,8 @@ import {EARTH_RADIUS_KM, EARTH_SCENE_RADIUS} from './SatelliteConstantLoader.js'
 export let usingLocalAssets = true;
 export let earthConfig = {
     diameter: 12756,
-    texture: 'textures/1_earth_16k.JPG',
-    textureLight: 'textures/earthmap1k.JPG'
+    texture: 'textures/1_earth_16k.jpg',
+    textureLight: 'textures/earthmap1k.jpg'
 };
 export let satelliteConfig = {
     icon: 'icons/ob_satellite.png',
