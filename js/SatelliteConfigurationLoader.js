@@ -100,17 +100,17 @@ export async function loadConfigs(GITHUB_REPO_RAW_BASE_URL) {
     }
 
     // Final fallback/default fills
-    earthConfig.diameter ||= EARTH_RADIUS_KM * 2;
+    earthConfig.diameter ||= 12756;
     earthConfig.texture ||= 'textures/1_earth_16k.jpg';
     earthConfig.textureLight ||= 'textures/earthmap1k_light.jpg';
     satelliteConfig.icon ||= 'icons/ob_satellite.png';
-    satelliteConfig.scale ||= [0.1, 0.1, 0.1];
+    satelliteConfig.scale ||= [0.25, 0.25, 1];
     satelliteConfig.mercatorIcon ||= 'icons/ob_satellite.png';
-    sceneConfig.camera ||= {fov: 45, near: 0.1, far: 1000, position: [0, 0, 30]};
-    sceneConfig.ambientLight ||= {color: 0xffffff, intensity: 0.5};
-    sceneConfig.directionalLight ||= {color: 0xffffff, intensity: 1, position: [5, 3, 5]};
+    sceneConfig.camera ||= {fov: 75, near: 0.1, far: 2000, position: [0, 10, 35]};
+    sceneConfig.ambientLight ||= {color: 0xffffff, intensity: 0.4};
+    sceneConfig.directionalLight ||= {color: 0xffffff, intensity: 0.8, position: [5, 3, 5]};
     controlsConfig.enableDamping ??= true;
-    controlsConfig.dampingFactor ||= 0.05;
+    controlsConfig.dampingFactor ||= 0.1;
 
     const globalScale = EARTH_SCENE_RADIUS / (earthConfig.diameter / 2);
 
