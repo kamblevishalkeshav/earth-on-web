@@ -2,7 +2,7 @@
 // Load satellite visualization configuration from GitHub or local fallback
 
 import {EARTH_RADIUS_KM, EARTH_SCENE_RADIUS} from './SatelliteConstantLoader.js';
-
+export let earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig;
 export let usingLocalAssets = false;
 
 /**
@@ -49,8 +49,6 @@ export async function loadConfigs(GITHUB_REPO_RAW_BASE_URL) {
     let CONFIG_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "config/";
     let TLE_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "json/tle/";
     let SATELLITES_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "json/satellites/";
-
-    let earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig;
 
     try {
         const results = await Promise.all([

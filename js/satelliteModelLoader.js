@@ -3,6 +3,7 @@
 // Build & display detailed satellite models + beam helpers
 // -----------------------------------------------------------------------------
 import * as THREE from 'three';
+import {fetchJSON} from './SatelliteConfigurationLoader.js';
 
 /* ——— constants, helper getNominalAltMeters, texture caches ---------------- */
 const EARTH_RADIUS_KM = 6371;
@@ -10,8 +11,7 @@ const EARTH_SCENE_RADIUS = 10;
 const KM_TO_SCENE_UNITS = EARTH_SCENE_RADIUS / EARTH_RADIUS_KM;
 const METERS_TO_UNITS = window.METERS_TO_SCENE_UNITS || 1.0;
 const renderer = window.renderer || null;
-export const SATELLITE_MODELS_BASE_URL =
-    window.SATELLITE_MODELS_BASE_URL || 'json/satellites/';
+export const SATELLITE_MODELS_BASE_URL = window.SATELLITE_MODELS_BASE_URL || 'json/satellites/';
 
 function getNominalAltMeters(meta = {}) {
     const s = meta?.orbital_slot?.nominal ?? '';
