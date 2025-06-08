@@ -34,7 +34,14 @@
 
     import * as THREE from 'three';
     import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-    import {loadConfigs, getFullGitHubUrl} from './js/SatelliteConfigurationLoader.js';
+    import {
+        satelliteConfig,
+        earthConfig,
+        sceneConfig,
+        controlsConfig,
+        getFullGitHubUrl,
+        checkFileExists
+    } from './js/SatelliteConfigurationLoader.js';
     import {updateSatelliteInfo, satelliteMenuLoader} from './js/SatelliteMenuLoader.js';
     import {showSatellite, buildAllBeams, clearCurrentDetailedSat} from './js/satelliteModelLoader.js';
     import {addECEFAxes, update3DLabelsPosition, updateECEFAxesVisibility} from './js/EarthFrameLoader.js';
@@ -49,7 +56,6 @@
     document.getElementById('ob_menu').innerHTML = satelliteMenuLoader();
 
     let scene, camera, renderer, earthMesh, controls;
-    let earthConfig, constantsConfig, satelliteConfig, sceneConfig, controlsConfig, globalScale;
     let mercatorCtx, mapWidth = 400, mapHeight = 200;
     let orbitFrame = null
     let currentSelectedSatellite = null; // This will store the TLE data object for the selected satellite
@@ -88,9 +94,7 @@
             return;
         }
 
-        const hdTextureFullUrl = getFullGitHubUrl(earthConfig.texture, GITHUB_REPO_RAW_BASE_URL);
-        const lightTextureFullUrl = getFullGitHubUrl(earthConfig.textureLight, GITHUB_REPO_RAW_BASE_URL);
-        const textureToLoad = simParams.useHighDefTexture ? hdTextureFullUrl : lightTextureFullUrl;
+        const textureToLoad = simParams.useHighDefTexture ? earthConfig.texture : earthConfig.textureLight;
 
         if (!textureToLoad) {
             console.error("Earth Texture URL is null. Check config paths and getFullGitHubUrl logic.");
@@ -195,7 +199,7 @@
         mercatorCanvasElement.height = mapHeight;
         mercatorCtx = mercatorCanvasElement.getContext("2d");
 
-        const remoteMapBgUrl = getFullGitHubUrl('textures/earthmap1k.jpg', GITHUB_REPO_RAW_BASE_URL);
+        const remoteMapBgUrl = earthConfig.textureLight;
 
         if (remoteMapBgUrl) {
             const img = new Image();
@@ -456,22 +460,9 @@
         }
     }
 
-
-    async function checkFileExists(url) {
-        try {
-            const response = await fetch(url, {method: 'HEAD'});
-            return response.ok;
-        } catch (error) {
-            // Network errors or CORS issues can cause fetch to reject
-            console.error('Error checking file existence (HEAD request failed):', url, error);
-            return false;
-        }
-    }
-
     async function loadAndDisplayDetailedSatellite(noradId, tleSatData) {
         console.log(`Attempting to load detailed model for NORAD ID: ${noradId}`);
         const newModel = await showSatellite(noradId, scene);
-        //const newbeams = await buildAllBeamMeshes(noradId, newModel.userData.payload.transponders);
         const newbeams = await buildAllBeams(noradId, currentSelectedSatellite, newModel.userData.payload.transponders);
 
         if (newModel) {
@@ -638,7 +629,6 @@
 
         controls.enabled = false; // re‑enabled when the flight completes
     }
-
 
     function resetCameraToDefault() {
         if (camera && controls && sceneConfig && sceneConfig.camera && sceneConfig.camera.position) {
@@ -1119,19 +1109,6 @@
 
     async function start() {
         try {
-            const config = await loadConfigs(GITHUB_REPO_RAW_BASE_URL);
-            ({
-                CONFIG_BASE_URL,
-                TLE_BASE_URL,
-                SATELLITES_BASE_URL,
-                earthConfig,
-                constantsConfig,
-                satelliteConfig,
-                sceneConfig,
-                controlsConfig,
-                globalScale
-            } = config);
-
 
             window.SATELLITE_MODELS_BASE_URL = SATELLITES_BASE_URL;
 
