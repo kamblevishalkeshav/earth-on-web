@@ -102,7 +102,7 @@ function panelGroup(l, t) {
 }
 
 const texLdr = new THREE.TextureLoader();
-const dishTex = texLdr.load('textures/dish_mesh.jpg');
+const dishTex = texLdr.load('textures/dish_mesh.JPG');
 dishTex.wrapS = dishTex.wrapT = THREE.ClampToEdgeWrapping;
 const squareTex = texLdr.load('textures/square_dish_mesh.png');
 squareTex.wrapS = squareTex.wrapT = THREE.ClampToEdgeWrapping;
