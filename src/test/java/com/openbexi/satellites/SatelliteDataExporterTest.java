@@ -1,4 +1,4 @@
-package com.openbexi.satellites;
+package test.java.com.openbexi.satellites;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

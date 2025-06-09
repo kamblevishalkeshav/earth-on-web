@@ -1,7 +1,9 @@
 // SatelliteConfigurationLoader.js
 // Load satellite visualization json data (TLE) from GitHub or local fallback
 
-import {EARTH_RADIUS_KM, EARTH_SCENE_RADIUS} from './SatelliteConstantLoader.js';
+import {EARTH_SCENE_RADIUS} from './SatelliteConstantLoader.js';
+export let GITHUB_REPO_RAW_BASE_URL = "https://raw.githubusercontent.com/arcazj/openbexi_earth_orbit/master/";
+export let SATELLITES_BASE_URL = GITHUB_REPO_RAW_BASE_URL + "json/satellites/"; // Used by satelliteModelLoader.js as well
 
 export let usingLocalAssets = true;
 export let earthConfig = {
@@ -28,7 +30,7 @@ export async function checkFileExists(url) {
         return response.ok;
     } catch (error) {
         // Network errors or CORS issues can cause fetch to reject
-        console.error('Error checking file existence (HEAD request failed):', url, error);
+        //console.error('Error checking file existence (HEAD request failed):', url, error);
         return false;
     }
 }

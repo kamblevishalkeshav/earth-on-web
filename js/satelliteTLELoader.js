@@ -2,7 +2,11 @@
 // -----------------------------------------------------------
 import * as THREE from 'three';
 import {KM_TO_SCENE_UNITS} from './SatelliteConstantLoader.js';
-import {satelliteConfig, fetchJSON, getFullGitHubUrl} from './SatelliteConfigurationLoader.js';
+import {
+    satelliteConfig,
+    fetchJSON,
+    getFullGitHubUrl, GITHUB_REPO_RAW_BASE_URL,
+} from './SatelliteConfigurationLoader.js';
 
 export let satellites = [];
 let orbitLine = null;
@@ -138,7 +142,7 @@ function processSatellites(scene, tleData, baseMaterial) {
 }
 
 
-export async function setupTLESatellites(scene, GITHUB_REPO_RAW_BASE_URL) {
+export async function setupTLESatellites(scene) {
     let TLE_BASE_URL = "json/tle/";
     console.log("Attempting to load TLE data from:", TLE_BASE_URL);
     const primaryTleUrl = TLE_BASE_URL + 'TLE.json';

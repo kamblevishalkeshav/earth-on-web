@@ -40,14 +40,27 @@ export function satelliteMenuLoader() {
 
         <input type="checkbox" id="highDefToggle">
         <label for="highDefToggle" class="checkbox-label">High Definition</label><br>
-
         <input type="checkbox" id="showECEFAxesToggle">
         <label for="showECEFAxesToggle" class="checkbox-label">Show ECEF Axes</label>
-        
-      <!-- inside controlsContainer, next to other toggles -->
-<label><input type="checkbox" id="showOrbitFrameToggle"> Show Orbit Frame (LVLH)</label>
-        
+        <label><input type="checkbox" id="showOrbitFrameToggle"> Show Orbit Frame (LVLH)</label>
+        <label><input type="checkbox" id="showYPRToggle"> Show Yaw‑Pitch‑Roll</label>
       </div>
+    </div>
+    
+    <div class="control-group" id="yprControls" style="display:none;">
+      <h3>Body-Frame Bias (deg)</h3>
+      <label style="margin-bottom:4px; display:block;">Yaw:
+        <input type="range" id="yawSlider"   min="-180" max="180" step="0.1" value="0">
+        <span id="yawVal">0</span>
+      </label>
+      <label style="margin-bottom:4px; display:block;">Pitch:
+        <input type="range" id="pitchSlider" min="-180" max="180" step="0.1" value="0">
+        <span id="pitchVal">0</span>
+      </label>
+      <label style="display:block;">Roll:
+        <input type="range" id="rollSlider"  min="-180" max="180" step="0.1" value="0">
+        <span id="rollVal">0</span>
+      </label>
     </div>
 
     <div class="control-group">

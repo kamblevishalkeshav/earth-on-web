@@ -1,4 +1,4 @@
-// js/satelliteModelLoader.js  (ES‑module)   – visibility‑fix edition
+// js/satelliteModelLoader.js  (ES‑module)   – visibility‑fix edition
 // -----------------------------------------------------------------------------
 // Build & display detailed satellite models + beam helpers
 // -----------------------------------------------------------------------------
@@ -65,35 +65,58 @@ try {
 function orient(o, d, aY = true) {
     const R = Math.PI / 2;
     switch (d) {
-        case'west':
+        case 'west':
             aY ? o.rotateZ(R) : o.rotateY(R);
             break;
-        case'east':
+        case 'east':
             aY ? o.rotateZ(-R) : o.rotateY(-R);
             break;
-        case'north':
+        case 'north':
             aY ? o.rotateX(R) : null;
             break;
-        case'south':
+        case 'south':
             aY ? o.rotateX(-R) : o.rotateY(Math.PI);
             break;
-        case'down':
+        case 'down':
             aY && o.rotateX(Math.PI);
     }
 }
 
+// ----------- BUS MESH (named for rotation support) ----------------
 function busMesh(b, t) {
-    return new THREE.Mesh(new THREE.BoxGeometry(b.width_m * METERS_TO_UNITS, b.height_m * METERS_TO_UNITS, b.depth_m * METERS_TO_UNITS), new THREE.MeshPhongMaterial({
-        map: t.foil,
-        color: 0xffffff,
-        shininess: 80
-    }));
+    const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(
+            b.width_m * METERS_TO_UNITS,
+            b.height_m * METERS_TO_UNITS,
+            b.depth_m * METERS_TO_UNITS
+        ),
+        new THREE.MeshPhongMaterial({ map: t.foil, color: 0xffffff, shininess: 80 })
+    );
+    mesh.name = 'busMesh'; // <-- Mark for easy lookup
+    return mesh;
+}
+
+// ----------- Apply Yaw/Pitch/Roll to the bus mesh -----------
+export function updateBusOrientation(modelGroup, yawDeg = 0, pitchDeg = 0, rollDeg = 0) {
+    const mesh = modelGroup;
+    if (!mesh) return;
+    const euler = new THREE.Euler(
+        THREE.MathUtils.degToRad(rollDeg || 0),    // X: Roll
+        THREE.MathUtils.degToRad(pitchDeg || 0),   // Y: Pitch
+        THREE.MathUtils.degToRad(yawDeg || 0),     // Z: Yaw
+        'ZYX'
+    );
+    mesh.setRotationFromEuler(euler);
 }
 
 function panelGroup(l, t) {
-    const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({map: t.panel, side: THREE.DoubleSide});
+    const g = new THREE.Group();
+    const m = new THREE.MeshBasicMaterial({ map: t.panel, side: THREE.DoubleSide });
     l.forEach(p => {
-        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(p.length_m * METERS_TO_UNITS, p.width_m * METERS_TO_UNITS), m);
+        const mesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(p.length_m * METERS_TO_UNITS, p.width_m * METERS_TO_UNITS),
+            m
+        );
         mesh.position.set(...p.position_m.map(v => v * METERS_TO_UNITS));
         orient(mesh, p.orientation, false);
         g.add(mesh);
@@ -226,72 +249,6 @@ export function clearCurrentDetailedSat(scene) {
     currentSatModel = null;
 }
 
-/* ——— beam helpers (identical logic, only comment trimmed for brevity) -------- */
-const DEFAULT_BEAM_COLORS = {C: 0x33a1ff, Ku: 0xffa533, Ka: 0x9a33ff};
-
-export async function buildBeamMesh(noradId, transponderId, opts = {}) {
-    const {material, halfConeAngleDeg} = opts, url = `${SATELLITE_MODELS_BASE_URL}${noradId}.json`;
-    let sat;
-    try {
-        const r = await fetchJSON(url);
-        sat = Array.isArray(r) ? r[0] : Object.values(r)[0];
-    } catch (e) {
-        console.error('buildBeamMesh › load', e);
-        return null;
-    }
-    if (!sat?.payload?.transponders) return null;
-    const [bandKey, beamKey] = transponderId.split('/');
-    const band = sat.payload.transponders[bandKey];
-    if (!band) return null;
-    const beam = band.beam_classes?.[beamKey] || band.spot_beams?.[beamKey];
-    if (!beam) return null;
-    const h_m = getNominalAltMeters(sat.meta);
-    const theta = halfConeAngleDeg ?? {global: 17, hemi: 8, zone: 5, spot_1: 2, spot_2: 2, steerable: 2}[beamKey] ?? 17;
-    const r_m = h_m * Math.tan(THREE.MathUtils.degToRad(theta));
-    const hU = h_m * METERS_TO_UNITS, rU = r_m * METERS_TO_UNITS;
-    const geom = new THREE.ConeGeometry(rU, hU, 32, 1, true);
-    geom.translate(0, -hU / 2, 0);
-    const mat = material ?? new THREE.MeshBasicMaterial({
-        color: DEFAULT_BEAM_COLORS[bandKey] || 0xffffff,
-        transparent: true,
-        opacity: 0.25,
-        depthWrite: false,
-        side: THREE.DoubleSide
-    });
-    const mesh = new THREE.Mesh(geom, mat);
-    mesh.name = `${bandKey}-${beamKey}-beam`;
-    mesh.userData = {noradId, band: bandKey, beamId: beamKey, beamSpec: beam};
-    return mesh;
-}
-
-export async function buildAllBeamMeshes(noradId, opts = {}) {
-    const {lookAt = new THREE.Vector3(0, 0, 0), ...pass} = opts, url = `${SATELLITE_MODELS_BASE_URL}${noradId}.json`;
-    let sat;
-    try {
-        const r = await fetchJSON(url);
-        sat = Array.isArray(r) ? r[0] : Object.values(r)[0];
-    } catch (e) {
-        console.error(e);
-        return null;
-    }
-    const tp = sat?.payload?.transponders;
-    if (!tp) return null;
-    const g = new THREE.Group();
-    g.name = `beams-${noradId}`;
-    for (const [bandKey, band] of Object.entries(tp)) {
-        const add = async (k) => {
-            const m = await buildBeamMesh(noradId, `${bandKey}/${k}`, pass);
-            if (m) {
-                m.lookAt(lookAt);
-                g.add(m);
-            }
-        };
-        if (band.beam_classes) for (const k of Object.keys(band.beam_classes)) await add(k);
-        if (band.spot_beams) for (const k of Object.keys(band.spot_beams)) await add(k);
-    }
-    return g;
-}
-
 /* ——— fine‑grained transponder beams (unchanged) ----------------------------- */
 const d2r = THREE.MathUtils.degToRad;
 
@@ -341,4 +298,3 @@ export function buildAllBeams(noradId, satData, tp, scene, opts = {}) {
     return group;
 }
 
-export default {showSatellite, clearCurrentDetailedSat};
