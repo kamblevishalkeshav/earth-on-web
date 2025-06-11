@@ -17,7 +17,7 @@ export let satelliteConfig = {
     mercatorIcon: 'icons/ob_satellite.png'
 };
 export let sceneConfig = {
-    camera: {fov: 75, near: 0.1, far: 2000, position: [0, 10, 35]},
+    camera: {fov: 75, near: 0.1, far: 1000, position: [0, 10, 20]},
     ambientLight: {color: 0xffffff, intensity: 0.4},
     directionalLight: {color: 0xffffff, intensity: 0.8, position: [5, 3, 5]}
 };

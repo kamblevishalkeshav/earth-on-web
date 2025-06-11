@@ -17,7 +17,7 @@ import * as THREE from "three";
 import { KM_TO_SCENE_UNITS } from "./SatelliteConstantLoader.js";
 
 /* ─────────── Tunables ─────────── */
-const DEFAULT_AXIS_LEN_KM = 8000;          // shorter than LVLH for clarity
+const DEFAULT_AXIS_LEN_KM = 3000;          // shorter than LVLH for clarity
 const AXIS_COLOR_X        = 0xff4040;      // Roll axis (+X)
 const AXIS_COLOR_Y        = 0x40ff40;      // Pitch axis (+Y)
 const AXIS_COLOR_Z        = 0x4090ff;      // Yaw axis  (+Z)

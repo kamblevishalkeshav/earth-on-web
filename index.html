@@ -23,6 +23,7 @@
         <canvas id="mercatorCanvas"></canvas>
     </div>
 </div>
+<div id="utcClockDisplay"></div>
 
 <script type="module">
     let usingLocalAssets;
@@ -45,7 +46,12 @@
         checkFileExists
     } from './js/SatelliteConfigurationLoader.js';
     import {updateSatelliteInfo, satelliteMenuLoader} from './js/SatelliteMenuLoader.js';
-    import {showSatellite, buildAllBeams, clearCurrentDetailedSat, updateBusOrientation} from './js/satelliteModelLoader.js';
+    import {
+        showSatellite,
+        buildAllBeams,
+        clearCurrentDetailedSat,
+        updateBusOrientation
+    } from './js/satelliteModelLoader.js';
     import {addECEFAxes, update3DLabelsPosition, updateECEFAxesVisibility} from './js/EarthFrameLoader.js';
     import {createOrbitFrame, updateOrbitFrame, setOrbitFrameVisibility} from './js/orbitFrameLoader.js';
     import {KM_TO_SCENE_UNITS, EARTH_SCENE_RADIUS} from './js/SatelliteConstantLoader.js';
@@ -53,7 +59,7 @@
     import {createYPRFrame, updateYPRFrame, setYPRVisibility} from './js/satelliteYawPitchRollLoader.js';
 
     // Load menu
-    const versionNumber = "1.0j"; // Updated version
+    const versionNumber = "1.0k";
     const versionRepoUrl = "https://github.com/arcazj/openbexi_earth_orbit";
     const versionText = `version ${versionNumber} - hosted at`;
     document.getElementById('ob_menu').innerHTML = satelliteMenuLoader();
@@ -75,10 +81,10 @@
         useHighDefTexture: false,
         showECEFAxes: false,
         showOrbitFrame: false,
-        yawDeg:   0,
+        yawDeg: 0,
         pitchDeg: 0,
-        rollDeg:  0,
-        showYPR:  false    // new checkbox you already wired
+        rollDeg: 0,
+        showYPR: false    // new checkbox you already wired
     };
 
     let orbitTypeFilterSelect, companyFilterSelect, satelliteCountDisplay;
@@ -87,6 +93,20 @@
     let satelliteSelectDropdown, satelliteInfoDiv;
     let controlsContainerElement, menuToggleBtnElement, versionDisplayElement;
     let labelXecrDiv, labelYecrDiv, labelZecrDiv, labelNorthPoleDiv, labelEquatorLineDiv, labelGreenwichMeridianDiv;
+
+    simParams.timeWarp = 1 / 60;
+    simParams.simDate = new Date();
+    const twHTML = `
+  <div id="timeWarpBox"
+       style="position:fixed;bottom:5px;left:50%;transform:translateX(-50%);
+              font:12px/1 sans-serif;z-index:2000;">
+    <label for="timeWarpSlider">Time&nbsp;×</label>
+    <input type="range" id="timeWarpSlider" min="0" max="60" step="1" value="0" style="width:200px;">
+    <span id="timeWarpVal">0</span>x
+  </div>`;
+    document.body.insertAdjacentHTML('beforeend', twHTML);
+    const timeWarpSlider = document.getElementById('timeWarpSlider');
+    const timeWarpVal = document.getElementById('timeWarpVal');
 
     function isMobileDevice() {
         return /Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(navigator.userAgent || navigator.vendor || window.opera);
@@ -186,7 +206,7 @@
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = controlsConfig.enableDamping;
         controls.dampingFactor = controlsConfig.dampingFactor;
-        controls.minDistance = EARTH_SCENE_RADIUS * 0.4;   // prevent inside‑Earth zoom
+        controls.minDistance = EARTH_SCENE_RADIUS * 1.4;   // prevent inside‑Earth zoom
         controls.maxDistance = EARTH_SCENE_RADIUS * 20;    // generous zoom‑out
         controls.enableZoom = true;
     }
@@ -229,13 +249,13 @@
         labelGreenwichMeridianDiv = document.getElementById('labelGreenwichMeridian');
 
         // Pitch-Roll-Yaw
-        const yprControls      = document.getElementById('yprControls');
-        const yawSlider        = document.getElementById('yawSlider');
-        const pitchSlider      = document.getElementById('pitchSlider');
-        const rollSlider       = document.getElementById('rollSlider');
-        const yawVal           = document.getElementById('yawVal');
-        const pitchVal         = document.getElementById('pitchVal');
-        const rollVal          = document.getElementById('rollVal');
+        const yprControls = document.getElementById('yprControls');
+        const yawSlider = document.getElementById('yawSlider');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const rollSlider = document.getElementById('rollSlider');
+        const yawVal = document.getElementById('yawVal');
+        const pitchVal = document.getElementById('pitchVal');
+        const rollVal = document.getElementById('rollVal');
 
 
         // Set initial values from simParams
@@ -246,6 +266,17 @@
         if (showECEFAxesToggleElement) showECEFAxesToggleElement.checked = simParams.showECEFAxes;
         if (showOrbitFrameToggleElement) showOrbitFrameToggleElement.checked = simParams.showOrbitFrame;
         showOrbitToggle.checked = simParams.showOrbit;
+
+        // Time‑warp slider (×1–60 minutes)
+        timeWarpSlider.addEventListener('input', e => {
+            simParams.timeWarp = parseInt(e.target.value, 10);
+            if (simParams.timeWarp < 1) {
+                timeWarpVal.textContent = `0`;
+                simParams.timeWarp = 1 / 60;
+            }
+            else
+                timeWarpVal.textContent = `${simParams.timeWarp}`;
+        });
 
         // Event Listeners
         orbitTypeFilterSelect.addEventListener('change', (e) => {
@@ -307,24 +338,23 @@
             simParams.showYPR = v;
             setYPRVisibility(yprFrame, v);
         });
+
         function updateYPRLabels() {
-            yawVal.textContent   = simParams.yawDeg.toFixed(1);
+            yawVal.textContent = simParams.yawDeg.toFixed(1);
             pitchVal.textContent = simParams.pitchDeg.toFixed(1);
-            rollVal.textContent  = simParams.rollDeg.toFixed(1);
+            rollVal.textContent = simParams.rollDeg.toFixed(1);
         }
+
         [yawSlider, pitchSlider, rollSlider].forEach(sl => {
             sl.addEventListener('input', () => {
-                simParams.yawDeg   = parseFloat(yawSlider.value);
+                simParams.yawDeg = parseFloat(yawSlider.value);
                 simParams.pitchDeg = parseFloat(pitchSlider.value);
-                simParams.rollDeg  = parseFloat(rollSlider.value);
+                simParams.rollDeg = parseFloat(rollSlider.value);
                 updateYPRLabels();
                 updateBusOrientation(detailedSatelliteModel, simParams.yawDeg, simParams.pitchDeg, simParams.rollDeg);
             });
         });
         updateYPRLabels();
-
-
-
 
 
         // Collapsible sections
@@ -414,6 +444,7 @@
         }
 
 
+        let updatedNoradId = tleSatData.norad_id;
         if (!fileExists && usingLocalAssets) { // If primary (which is local if usingLocalAssets) fails
             console.warn(`Local model file ${fileUrl} not found.`);
             // No other place to check if already local
@@ -421,11 +452,21 @@
             console.warn(`GitHub model file ${fileUrl} not found, attempting local fallback.`);
             fileUrl = "json/satellites/" + `${tleSatData.norad_id}.json`; // Standard local path
             fileExists = await checkFileExists(fileUrl);
+            if (!fileExists) {
+                if (selectedNameInDropdown.toLowerCase().includes('3b')) {
+                    updatedNoradId = "O3b";
+                    fileExists = true;
+                }
+                if (selectedNameInDropdown.toUpperCase().includes('IS-9')) {
+                    updatedNoradId = "IS-9";
+                    fileExists = true;
+                }
+            }
         }
 
 
         if (fileExists) {
-            await loadAndDisplayDetailedSatellite(tleSatData.norad_id, tleSatData);
+            await loadAndDisplayDetailedSatellite(tleSatData.norad_id, tleSatData, updatedNoradId);
         } else {
             // If no specific model, try loading a generic/default model (e.g., noradId "0" or "default")
             console.warn(`Satellite data file for NORAD ${tleSatData.norad_id} not found at any checked location. Attempting to load default model.`);
@@ -446,9 +487,9 @@
 
     }
 
-    async function loadAndDisplayDetailedSatellite(noradId, tleSatData) {
+    async function loadAndDisplayDetailedSatellite(noradId, tleSatData, updatedNoradId) {
         console.log(`Attempting to load detailed model for NORAD ID: ${noradId}`);
-        const newModel = await showSatellite(noradId, scene);
+        const newModel = await showSatellite(noradId, scene, updatedNoradId);
         const newbeams = await buildAllBeams(noradId, currentSelectedSatellite, newModel.userData.payload.transponders);
 
         if (newModel) {
@@ -459,7 +500,7 @@
                 currentSelectedSatellite = tleSatData; // This is the TLE data object
                 tleSatData.isSelected = true; // Mark TLE data as selected
                 if (tleSatData.mesh) {
-                    tleSatData.mesh.visible = false; // Hide the corresponding TLE sprite
+                    tleSatData.mesh.visible = true; // Hide the corresponding TLE sprite
                 }
 
                 // --- Set initial position of the detailed model ---
@@ -587,7 +628,7 @@
             const size = new THREE.Vector3();
             bbox.getSize(size);
             const modelDiameter = Math.max(size.x, size.y, size.z, 0.5 * KM_TO_SCENE_UNITS * 1000);
-            distance = modelDiameter * 45;
+            distance = modelDiameter;
 
             // Make sure we never get *closer* than the sprite framing distance
             distance = Math.max(distance, EARTH_SCENE_RADIUS * 0.5);
@@ -614,6 +655,9 @@
         };
 
         controls.enabled = false; // re‑enabled when the flight completes
+        controls.reset();             // OrbitControls’ built‑in reset
+        camera.position.set(...sceneConfig.camera.position);
+        controls.target.set(0, 0, 0);
     }
 
     function resetCameraToDefault() {
@@ -780,151 +824,194 @@
         }
     });
 
+    function formatUTCString(date) {
+        const options = {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'long',
+            day: '2-digit',
+            timeZone: 'UTC',
+        };
+        const datePart = date.toLocaleDateString('en-US', options);
+        const timePart = date.toUTCString().split(' ')[4]; // "HH:MM:SS"
+        return `${timePart} UTC  ${datePart}`;
+    }
+
+
+    // main.js — revised animate() with time‑warp, Earth‑sync GEO, and auto‑tracking
+    // ---------------------------------------------------------------------------
     function animate() {
-        requestAnimationFrame(animate);// time since last frame
+        requestAnimationFrame(animate);
 
-        /*──────────────── Camera easing ────────────────*/
+        /*── Camera easing ──*/
         if (cameraMove) {
-            const now = clock.getElapsedTime();
-            const t = Math.min((now - cameraMove.startTime) / cameraMove.duration, 1);
-            const smooth = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;     // ease‑in‑out quad
-            camera.position.lerpVectors(cameraMove.startCamPos, cameraMove.endCamPos, smooth);
-            controls.target.lerpVectors(cameraMove.startTarget, cameraMove.endTarget, smooth);
+            const tReal = clock.getElapsedTime();
+            const f = Math.min((tReal - cameraMove.startTime) / cameraMove.duration, 1);
+            const s = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+            camera.position.lerpVectors(cameraMove.startCamPos, cameraMove.endCamPos, s);
+            controls.target.lerpVectors(cameraMove.startTarget, cameraMove.endTarget, s);
             controls.update();
-
-            if (t >= 1) {                          // flight complete
+            if (f >= 1) {
                 cameraMove = null;
                 controls.enabled = true;
             }
-        } else if (controls && controls.enabled) {
+        } else {
             controls.update();
         }
 
-        /*──────────────── Time & GMST ────────────────*/
-        const currentTime = new Date();
-        const jdayCurrent = satellite.jday(
-            currentTime.getUTCFullYear(), currentTime.getUTCMonth() + 1, currentTime.getUTCDate(),
-            currentTime.getUTCHours(), currentTime.getUTCMinutes(), currentTime.getUTCSeconds());
-        const gmstCurrent = satellite.gstime(jdayCurrent);
+        /*── Simulation clock (minutes·timeWarp per real‑second) ──*/
+        const dtReal = clock.getDelta();
+        simParams.simDate = new Date(
+            simParams.simDate.getTime() + dtReal * 1000 * 60 * simParams.timeWarp
+        );
 
-        /*──────────────── Update TLE sprites ────────────────*/
-        satellites.forEach(sat => {
-            if (sat.mesh && sat.mesh.visible && sat.satrec) {
-                try {
-                    const pv = satellite.propagate(sat.satrec, currentTime);
-                    if (!pv || !pv.position) return;
-                    const ecf = satellite.eciToEcf(pv.position, gmstCurrent);
-                    sat.mesh.position.set(
-                        ecf.x * KM_TO_SCENE_UNITS,
-                        ecf.z * KM_TO_SCENE_UNITS,
-                        ecf.y * KM_TO_SCENE_UNITS
-                    );
-                } catch (_) {
-                    sat.mesh.visible = false;
-                }
+        const simNow = simParams.simDate;
+        const jDay = satellite.jday(
+            simNow.getUTCFullYear(), simNow.getUTCMonth() + 1, simNow.getUTCDate(),
+            simNow.getUTCHours(), simNow.getUTCMinutes(), simNow.getUTCSeconds()
+        );
+        const gmstNow = satellite.gstime(jDay);
+        const rotY = -gmstNow;                               // scene rotation
+
+        /* update slider read‑out with UTC simulation time */
+        /*── update slider read‑out (factor | UTC time) ──*/
+        if (timeWarpVal) {
+            const pad = n => n.toString().padStart(2, '0');
+            const utcStr =
+                `${simNow.getUTCFullYear()}-` +
+                `${pad(simNow.getUTCMonth() + 1)}-` +
+                `${pad(simNow.getUTCDate())} ` +
+                `${pad(simNow.getUTCHours())}:` +
+                `${pad(simNow.getUTCMinutes())}:` +
+                `${pad(simNow.getUTCSeconds())}`;
+            document.getElementById("utcClockDisplay").textContent = formatUTCString(simParams.simDate);
+
+            if (simParams.timeWarp < 1)
+                timeWarpVal.textContent = `0`;
+            else
+                timeWarpVal.textContent = `${simParams.timeWarp}`;
+        }
+
+
+        /*── Earth rotation ──*/
+        if (earthMesh) earthMesh.rotation.y = rotY;
+
+        /* helper → ECF → scene coords */
+        const toScene = (x, y, z) =>
+            new THREE.Vector3(x, z, y)
+                .applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY)
+                .multiplyScalar(KM_TO_SCENE_UNITS);
+
+        /*── Visible TLE sprites ──*/
+        satellites.forEach(s => {
+            if (!s.mesh?.visible || !s.satrec) return;
+            try {
+                const pv = satellite.propagate(s.satrec, simNow);
+                if (!pv?.position) return;
+                const e = satellite.eciToEcf(pv.position, gmstNow);
+                s.mesh.position.copy(toScene(e.x, e.y, e.z));
+            } catch { /* ignore */
             }
         });
 
-        /*──────────────── Update detailed model ────────────────*/
-        if (detailedSatelliteModel && detailedSatelliteModel.visible &&
-            currentSelectedSatellite && currentSelectedSatellite.satrec) {
+        /*── Detailed model (selected) ──*/
+        if (detailedSatelliteModel?.visible && currentSelectedSatellite?.satrec) {
             try {
-                const pv = satellite.propagate(currentSelectedSatellite.satrec, currentTime);
-                if (pv && pv.position) {
-                    const ecf = satellite.eciToEcf(pv.position, gmstCurrent);
-                    detailedSatelliteModel.position.set(
-                        ecf.x * KM_TO_SCENE_UNITS,
-                        ecf.z * KM_TO_SCENE_UNITS,
-                        ecf.y * KM_TO_SCENE_UNITS
+                const pv = satellite.propagate(currentSelectedSatellite.satrec, simNow);
+                if (pv?.position) {
+                    const e = satellite.eciToEcf(pv.position, gmstNow);
+                    detailedSatelliteModel.position.copy(toScene(e.x, e.y, e.z));
+                }
+            } catch { /* keep last good pos */
+            }
+        }
+
+        /*── LVLH orbit frame (selected) ──*/
+        if (simParams.showOrbitFrame &&
+            orbitFrame &&
+            currentSelectedSatellite?.satrec &&
+            currentSelectedSatellite.mesh?.visible) {
+            try {
+                const pv = satellite.propagate(currentSelectedSatellite.satrec, simNow);
+                if (pv?.position && pv?.velocity) {
+                    const ep = satellite.eciToEcf(pv.position, gmstNow);
+                    const ev = satellite.eciToEcf(pv.velocity, gmstNow);
+                    updateOrbitFrame(
+                        orbitFrame,
+                        toScene(ep.x, ep.y, ep.z),
+                        toScene(ev.x, ev.y, ev.z)
                     );
                 }
-            } catch (_) { /* keep last good pos */
+            } catch { /* ignore */
             }
         }
 
-        /*──────────────── LVLH orbit‑frame arrows ────────────────*/
-        if (simParams.showOrbitFrame && orbitFrame &&
-            currentSelectedSatellite && currentSelectedSatellite.satrec) {
-            try {
-                setOrbitFrameVisibility(orbitFrame, simParams.showOrbitFrame);
-                const pv = satellite.propagate(currentSelectedSatellite.satrec, currentTime);
-                if (pv && pv.position && pv.velocity) {
-                    const ecfPos = satellite.eciToEcf(pv.position, gmstCurrent);
-                    const ecfVel = satellite.eciToEcf(pv.velocity, gmstCurrent);
-
-                    const posVec = new THREE.Vector3(
-                        ecfPos.x * KM_TO_SCENE_UNITS,
-                        ecfPos.z * KM_TO_SCENE_UNITS,
-                        ecfPos.y * KM_TO_SCENE_UNITS);
-
-                    const velVec = new THREE.Vector3(
-                        ecfVel.x * KM_TO_SCENE_UNITS,
-                        ecfVel.z * KM_TO_SCENE_UNITS,
-                        ecfVel.y * KM_TO_SCENE_UNITS);
-
-                    updateOrbitFrame(orbitFrame, posVec, velVec);
-                }
-            } catch (_) { /* ignore propagation hiccups */
-            }
+        /*── YPR frame ──*/
+        if (simParams.showYPR && yprFrame && currentSelectedSatellite?.mesh?.visible) {
+            const pos = detailedSatelliteModel
+                ? detailedSatelliteModel.position
+                : currentSelectedSatellite.mesh.position;
+            updateYPRFrame(
+                yprFrame, pos,
+                simParams.yawDeg, simParams.pitchDeg, simParams.rollDeg
+            );
         }
 
-        /*──────────────── 3‑D vs Mercator views ────────────────*/
+        /*── Auto‑track selected satellite ──*/
+        /*──────── Earth‑centred “chase” camera ────────*/
+        if (!cameraMove && controls && currentSelectedSatellite?.mesh?.visible) {
+
+            // Satellite position (sprite or detailed model)
+            const satPos = detailedSatelliteModel
+                ? detailedSatelliteModel.position
+                : currentSelectedSatellite.mesh.position;
+
+            // Unit vector from Earth centre → satellite
+            const dir = satPos.clone().normalize();
+
+            // Offset camera *behind* the satellite along that line.
+            // Here we stay one Earth radius farther out than the satellite.
+            const camPos = satPos.clone().add(dir.multiplyScalar(EARTH_SCENE_RADIUS));
+
+            // Update camera & OrbitControls
+            //camera.position.copy(camPos);   // move camera
+            controls.target.set(0, 0, 0);   // always look at Earth centre
+            controls.update();              // refresh matrices
+        }
+
+
+        /*── Render 3‑D vs Mercator ──*/
         const show3D = simParams.view3D;
-        const showMercator = simParams.viewMercator;
-
-        // 3‑D render
         if (renderer) renderer.domElement.style.display = show3D ? 'block' : 'none';
         if (show3D) {
             renderer.render(scene, camera);
             update3DLabelsPosition(camera, simParams);
         } else {
-            // hide ECEF labels when 3‑D off
             ['labelXecr', 'labelYecr', 'labelZecr',
                 'labelNorthPole', 'labelEquatorLine', 'labelGreenwichMeridian']
-                .forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.style.display = 'none';
-                });
+                .forEach(id => document.getElementById(id)?.style && (document.getElementById(id).style.display = 'none'));
         }
 
-        // Mercator redraw
         if (mercatorContainer) {
-            if (showMercator) {
-                mercatorContainer.style.display = "block";
-                if (!show3D) {
-                    mercatorContainer.classList.add("fullscreen");
-                } else {
-                    mercatorContainer.classList.remove("fullscreen");
-                }
+            if (simParams.viewMercator) {
+                mercatorContainer.style.display = 'block';
+                mercatorContainer.classList.toggle('fullscreen', !show3D);
                 if (mercatorCanvasElement && mapBackgroundDiv) {
-                    const currentMapContainerWidth = mapBackgroundDiv.clientWidth;
-                    const currentMapContainerHeight = mapBackgroundDiv.clientHeight;
-                    if (mercatorCanvasElement.width !== currentMapContainerWidth || mercatorCanvasElement.height !== currentMapContainerHeight) {
-                        mercatorCanvasElement.width = currentMapContainerWidth;
-                        mercatorCanvasElement.height = currentMapContainerHeight;
+                    const w = mapBackgroundDiv.clientWidth;
+                    const h = mapBackgroundDiv.clientHeight;
+                    if (mercatorCanvasElement.width !== w || mercatorCanvasElement.height !== h) {
+                        mercatorCanvasElement.width = w;
+                        mercatorCanvasElement.height = h;
                     }
                     updateMercatorMap();
                 }
             } else {
-                mercatorContainer.style.display = "none";
+                mercatorContainer.style.display = 'none';
             }
         }
-        if (simParams.showYPR && yprFrame && currentSelectedSatellite) {
-            const pos = detailedSatelliteModel
-                ? detailedSatelliteModel.position
-                : currentSelectedSatellite.mesh.position;
-
-            updateYPRFrame(
-                yprFrame,
-                pos,
-                simParams.yawDeg,
-                simParams.pitchDeg,
-                simParams.rollDeg
-            );
-        }
-
 
     }
+
 
     function onWindowResize() {
         if (camera && renderer) {

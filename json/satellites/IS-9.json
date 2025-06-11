@@ -4,6 +4,29 @@
     "meta": {
       "norad_id": 0
     },
+    "orbit": {
+      "latitude": 0.0,
+      "longitude": 0.0,
+      "altitude": 35786000
+    },
+    "attitude": {
+      "roll": -70,
+      "pitch":5.5,
+      "yaw": 93
+    },
+    "attitudeCapability": {
+      "minRoll": -5,
+      "maxRoll": 5,
+      "minPitch": -4,
+      "maxPitch": 4,
+      "canFlyInverted": true
+    },
+    "orbital_slot": {
+      "nominal": "<orbitType>",
+      "operational_history": [
+        "<orbitHistoryString>"
+      ]
+    },
     "payload": {
       "transponders": {
       },

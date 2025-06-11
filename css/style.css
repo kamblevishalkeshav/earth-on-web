@@ -156,7 +156,7 @@ canvas {
 
 /* Satellite Info Panel */
 #satelliteInfo {
-  margin-top: 10px;
+  margin-top: 1px;
   color: #fff;
   font-family: monospace;
   background-color: #222;
@@ -165,7 +165,7 @@ canvas {
   font-size: 11px;
   white-space: pre-wrap; /* Preserve whitespace and newlines */
   border: 1px solid #444;
-  max-height: 200px; /* Limit height and enable scroll if needed */
+  max-height: 400px; /* Limit height and enable scroll if needed */
   overflow-y: auto;
 }
 
@@ -254,3 +254,89 @@ canvas {
   font-size: 10px;
   white-space: nowrap;
 }
+/* Sidebar container */
+#controlsContainer {
+  padding: 10px;
+  font-family: sans-serif;
+}
+
+/* Control group styling */
+.control-group {
+  margin-bottom: 1em;
+}
+
+/* Collapsible section headers */
+.control-group h3 {
+  margin: 0 0 0.5em;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Flex layout for filters */
+#filtersContent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Filter column */
+.filter-column {
+  flex: 1 1 45%;
+  text-align: left;
+}
+
+/* Label styles */
+.filter-column label,
+.control-group label {
+  display: block;
+  margin: 4px 0;
+  color: #00aaff;
+}
+
+/* Select box styling */
+.filter-column select {
+  width: 100%;
+}
+
+/* Grid layout for view options */
+#viewContent {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  column-gap: 14px;
+  row-gap: 4px;
+}
+
+/* Satellite info table */
+#satelliteInfo .meta-table {
+  font-size: 12px;
+}
+
+#satelliteInfo .meta-table td.v {
+  color: #ffd966;
+}
+
+/* Slider label group */
+#yprControls label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+#utcClockDisplay {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  background: black;
+  color: #00ccff; /* Light blue */
+  padding: 6px 12px;
+  border: 2px solid #00ccff;
+  border-radius: 6px;
+  z-index: 999;
+  box-shadow: 0 0 10px #00ccff;
+}
+
+

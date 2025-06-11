@@ -9,43 +9,51 @@ export function satelliteMenuLoader() {
   <div id="controlsContainer">
     <div id="versionDisplay"></div>
 
-    <div class="control-group">
-      <h3 data-collapsible-target="filtersContent">Filters <span class="toggle-icon">▾</span></h3>
-      <div id="filtersContent" class="collapsible-content">
-        <label for="orbitTypeFilter">Orbit Type:</label>
-        <select id="orbitTypeFilter">
-          <option value="ALL">ALL</option>
-          <option value="LEO">LEO</option>
-          <option value="MEO">MEO</option>
-          <option value="GEO">GEO</option>
-        </select>
+   <div class="control-group">
+  <h3 data-collapsible-target="filtersContent">
+    Filters – Satellites Found: <span id="satelliteCountDisplay">0</span>
+    <span class="toggle-icon">▾</span>
+  </h3>
+  <div id="filtersContent" class="collapsible-content">
+  <div class="filter-column">
+    <label for="orbitTypeFilter">Orbit Type:</label>
+    <select id="orbitTypeFilter">
+      <option value="ALL">ALL</option>
+      <option value="LEO">LEO</option>
+      <option value="MEO">MEO</option>
+      <option value="GEO">GEO</option>
+    </select>
+  </div>
 
-        <label for="companyFilter">Company:</label>
-        <select id="companyFilter">
-          <option value="ALL COMPANY">ALL COMPANY</option>
-        </select>
+  <div class="filter-column">
+    <label for="companyFilter">Company:</label>
+    <select id="companyFilter">
+      <option value="ALL COMPANY">ALL COMPANY</option>
+    </select>
+  </div>
+</div>
 
-        <p>Satellites Found: <span id="satelliteCountDisplay">0</span></p>
-      </div>
-    </div>
+</div>
 
-    <div class="control-group">
-      <h3 data-collapsible-target="viewContent">View <span class="toggle-icon">▾</span></h3>
-      <div id="viewContent" class="collapsible-content">
-        <input type="checkbox" id="view3DToggle" checked>
-        <label for="view3DToggle" class="checkbox-label">3D Globe</label><br>
 
-        <input type="checkbox" id="viewMercatorToggle">
-        <label for="viewMercatorToggle" class="checkbox-label">2D Mercator</label><br>
+  <div class="control-group">
+  <h3 data-collapsible-target="viewContent">View <span class="toggle-icon">▾</span></h3>
 
-        <input type="checkbox" id="highDefToggle">
-        <label for="highDefToggle" class="checkbox-label">High Definition</label><br>
-        <input type="checkbox" id="showECEFAxesToggle">
-        <label for="showECEFAxesToggle" class="checkbox-label">Show ECEF Axes</label>
-        <label><input type="checkbox" id="showOrbitFrameToggle"> Show Orbit Frame (LVLH)</label>
-        <label><input type="checkbox" id="showYPRToggle"> Show Yaw‑Pitch‑Roll</label>
-      </div>
-    </div>
+  <!-- 2‑column grid -->
+  <div id="viewContent" class="collapsible-content"
+       style="display:grid;grid-template-columns:repeat(2,auto);column-gap:14px;row-gap:4px;">
+
+    <label><input type="checkbox" id="view3DToggle"      checked> 3D&nbsp;Globe</label>
+    <label><input type="checkbox" id="viewMercatorToggle"> 2D&nbsp;Mercator</label>
+
+    <label><input type="checkbox" id="highDefToggle">    High&nbsp;Definition</label>
+    <label><input type="checkbox" id="showECEFAxesToggle"> ECEF&nbsp;Axes</label>
+
+    <label><input type="checkbox" id="showOrbitFrameToggle"> Orbit&nbsp;Frame&nbsp;(LVLH)</label>
+    <label><input type="checkbox" id="showYPRToggle">    Yaw‑Pitch‑Roll</label>
+  </div>
+</div>
+
     
     <div class="control-group" id="yprControls" style="display:none;">
       <h3>Body-Frame Bias (deg)</h3>
@@ -87,16 +95,38 @@ export function satelliteMenuLoader() {
   </div>`;
 }
 
-export function updateSatelliteInfo(satelliteInfoDiv, satData) { // satData is the TLE object
-    if (!satelliteInfoDiv) return;
-    if (!satData) {
-        satelliteInfoDiv.innerHTML = `<div style="font-weight:bold;">No satellite selected</div>`;
+export function updateSatelliteInfo(infoDiv, sat) {
+    if (!infoDiv) return;
+
+    // No satellite selected
+    if (!sat) {
+        infoDiv.innerHTML =
+            '<div style="font-weight:bold;">No satellite selected</div>';
         return;
     }
-    satelliteInfoDiv.innerHTML = `
-            <div style="font-weight:bold; margin-bottom:3px; color: #00aaff;">Selected: ${satData.satellite_name}</div>
-            <div>Company: ${satData.company}</div><div>Type: ${satData.orbitType}</div>
-            <div>Launch: ${satData.launch_date || "N/A"}</div><div>NORAD: ${satData.norad_id}</div>
-            <div style="color:#aaa; margin-top:5px; font-size:10px;">TLE1: ${satData.tle_line1}</div>
-            <div style="color:#aaa; font-size:10px;">TLE2: ${satData.tle_line2}</div>`;
+
+    // Shortcuts
+    const m   = sat.meta ?? {};
+    const tle1 = sat.tle_line1 ?? '—';
+    const tle2 = sat.tle_line2 ?? '—';
+
+    // Build key‑value rows
+    const kv = {
+        orbitType       : sat.orbitType          ?? m.orbital_slot?.nominal ?? '—',
+        company         : sat.company            ?? m.manufacturer ?? '—',
+        satellite_name  : sat.satellite_name     ?? sat.name ?? '—',
+        norad_id        : sat.norad_id           ?? m.norad_id ?? '—',
+        launch_date     : sat.launch_date          ?? '—',
+        tle_line1       : tle1,
+        tle_line2       : tle2
+    };
+
+    const rows = Object.entries(kv)
+        .map(([k,v]) => `<tr><td class="k">${k}</td><td class="v" style="color:#ffd966;">${v}</td></tr>`)
+        .join('');
+
+    infoDiv.innerHTML = `
+        <table class="meta-table" style="font-size:12px;">
+            ${rows}
+        </table>`;
 }
