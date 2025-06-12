@@ -7,6 +7,8 @@ import {
     satelliteConfig
 } from './SatelliteConfigurationLoader.js';
 import {satellites} from './satelliteTLELoader.js';
+import {drawDayNightMercator} from './drawDayNight.js';
+
 export let mercatorContainer, mercatorCanvasElement, mapBackgroundDiv;
 export let mercatorCtx, mapWidth = 400, mapHeight = 200;
 let mercatorSatIcon = new Image();
@@ -67,62 +69,13 @@ export function initMercatorView() {
     }
 }
 
-
-function drawDayNightTerminatorMercator(ctx, width, height) {
-    const now = new Date();
-    const hoursUTC = now.getUTCHours() + now.getUTCMinutes() / 60;
-    const subSolarLon = (hoursUTC * 15) - 180;
-    const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
-    const N = dayOfYear;
-    const declRad = -Math.asin(0.39779 * Math.cos(0.98565 * (N + 10) * Math.PI / 180 + 1.914 * Math.sin(0.98565 * (N - 2) * Math.PI / 180) * Math.PI / 180));
-    const subSolarLat = declRad * 180 / Math.PI;
-
-    ctx.save();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-    ctx.beginPath();
-
-    const points = [];
-    let firstPoint = null, lastPoint = null;
-
-    for (let i = 0; i <= width; i++) {
-        const lon = (i / width) * 360 - 180;
-        let terminatorLat = Math.atan(-Math.cos((lon - subSolarLon) * Math.PI / 180) / Math.tan(subSolarLat * Math.PI / 180)) * 180 / Math.PI;
-        terminatorLat = Math.max(-85.05112878, Math.min(85.05112878, terminatorLat));
-        const p = latLonToMercator(terminatorLat, lon);
-        points.push(p);
-        if (i === 0) firstPoint = p;
-        if (i === width) lastPoint = p;
-    }
-
-    if (!firstPoint) {
-        ctx.restore();
-        return;
-    }
-
-    ctx.moveTo(firstPoint.x, firstPoint.y);
-    for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i].x, points[i].y);
-    }
-
-    if (subSolarLat > 0) {
-        ctx.lineTo(lastPoint.x, height);
-        ctx.lineTo(firstPoint.x, height);
-    } else {
-        ctx.lineTo(lastPoint.x, 0);
-        ctx.lineTo(firstPoint.x, 0);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-}
-
-export function updateMercatorMap() {
+export function updateMercatorMap(simParams) {
     if (!mercatorCtx || !mercatorCanvasElement || mercatorContainer.style.display === 'none') return;
 
     mercatorCtx.clearRect(0, 0, mercatorCanvasElement.width, mercatorCanvasElement.height);
 
-    if (typeof drawDayNightTerminatorMercator === 'function') {
-        drawDayNightTerminatorMercator(mercatorCtx, mercatorCanvasElement.width, mercatorCanvasElement.height);
+    if (simParams.showDayNight) {
+        drawDayNightMercator(mercatorCtx, mercatorCanvasElement.width, mercatorCanvasElement.height, simParams.simDate);
     }
 
     const now = new Date();

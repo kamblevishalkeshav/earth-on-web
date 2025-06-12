@@ -51,6 +51,8 @@ export function satelliteMenuLoader() {
 
     <label><input type="checkbox" id="showOrbitFrameToggle"> Orbit&nbsp;Frame&nbsp;(LVLH)</label>
     <label><input type="checkbox" id="showYPRToggle">    Yaw‑Pitch‑Roll</label>
+  
+    <label><input type="checkbox" id="showDayNightToggle" checked>Day/Night Shading</label>
   </div>
 </div>
 

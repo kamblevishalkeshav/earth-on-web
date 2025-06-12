@@ -37,6 +37,7 @@
         mapWidth,
         initMercatorView, updateMercatorMap
     } from './js/mercatorMapLoader.js';
+    import {drawDayNight3D} from './js/drawDayNight.js';
     import {
         SATELLITES_BASE_URL,
         satelliteConfig,
@@ -59,7 +60,7 @@
     import {createYPRFrame, updateYPRFrame, setYPRVisibility} from './js/satelliteYawPitchRollLoader.js';
 
     // Load menu
-    const versionNumber = "1.0k";
+    const versionNumber = "1.0l";
     const versionRepoUrl = "https://github.com/arcazj/openbexi_earth_orbit";
     const versionText = `version ${versionNumber} - hosted at`;
     document.getElementById('ob_menu').innerHTML = satelliteMenuLoader();
@@ -84,7 +85,10 @@
         yawDeg: 0,
         pitchDeg: 0,
         rollDeg: 0,
-        showYPR: false    // new checkbox you already wired
+        showYPR: false,
+        showDayNight: false,
+        simDate: new Date(),
+        timeWarp: 1
     };
 
     let orbitTypeFilterSelect, companyFilterSelect, satelliteCountDisplay;
@@ -149,7 +153,6 @@
             }
         );
     }
-
     function init3D() {
         /* ───────── Scene, Camera, Renderer ───────── */
         scene = new THREE.Scene();
@@ -162,20 +165,18 @@
         );
         camera.position.set(...sceneConfig.camera.position);
 
-        renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;        // allow Sun-light shadows (drawDayNight3D)
         document.body.appendChild(renderer.domElement);
 
         /* expose for other modules (orbitFrame labels need them) */
         window.renderer = renderer;
-        window.camera = camera;
+        window.camera   = camera;
 
         /* ───────── Lighting ───────── */
-        scene.add(new THREE.AmbientLight(
-            sceneConfig.ambientLight.color,
-            sceneConfig.ambientLight.intensity
-        ));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.15)); // was 0.6 or similar
 
         const dirLight = new THREE.DirectionalLight(
             sceneConfig.directionalLight.color,
@@ -186,11 +187,12 @@
 
         /* ───────── Earth mesh ───────── */
         textureLoader = new THREE.TextureLoader();
-        const earthMat = new THREE.MeshPhongMaterial({color: 0xffffff}); // texture applied later
+        const earthMat = new THREE.MeshPhongMaterial({ color: 0xffffff }); // texture applied later
         earthMesh = new THREE.Mesh(
             new THREE.SphereGeometry(EARTH_SCENE_RADIUS, 64, 64),
             earthMat
         );
+        earthMesh.receiveShadow = true;
         scene.add(earthMesh);
         updateEarthTexture();
 
@@ -198,17 +200,17 @@
         addECEFAxes(scene);
         updateECEFAxesVisibility(simParams);
 
-        /* ───────── LVLH Orbit‑Frame (hidden until user toggles) ───────── */
-        orbitFrame = createOrbitFrame(scene);           // default 10 000 km length
-        setOrbitFrameVisibility(orbitFrame, false);     // start invisible
+        /* ───────── LVLH Orbit-Frame ───────── */
+        orbitFrame = createOrbitFrame(scene);          // default 10 000 km length
+        setOrbitFrameVisibility(orbitFrame, false);    // hidden until toggled
 
         /* ───────── OrbitControls ───────── */
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = controlsConfig.enableDamping;
         controls.dampingFactor = controlsConfig.dampingFactor;
-        controls.minDistance = EARTH_SCENE_RADIUS * 1.4;   // prevent inside‑Earth zoom
-        controls.maxDistance = EARTH_SCENE_RADIUS * 20;    // generous zoom‑out
-        controls.enableZoom = true;
+        controls.minDistance   = EARTH_SCENE_RADIUS * 1.4;   // prevent inside-Earth zoom
+        controls.maxDistance   = EARTH_SCENE_RADIUS * 20;    // generous zoom-out
+        controls.enableZoom    = true;
     }
 
     function setupHTMLControls() {
@@ -273,8 +275,7 @@
             if (simParams.timeWarp < 1) {
                 timeWarpVal.textContent = `0`;
                 simParams.timeWarp = 1 / 60;
-            }
-            else
+            } else
                 timeWarpVal.textContent = `${simParams.timeWarp}`;
         });
 
@@ -386,6 +387,14 @@
             // Set initial state based on class (e.g., if 'menu-hidden' is default)
             menuToggleBtnElement.innerHTML = controlsContainerElement.classList.contains('menu-hidden') ? '☰' : '✕';
         }
+
+        const showDayNightToggle = document.getElementById('showDayNightToggle');
+        showDayNightToggle.checked   = simParams.showDayNight;   // set UI ↤ flag
+        simParams.showDayNight       = showDayNightToggle.checked;
+        showDayNightToggle.addEventListener('change', e => {
+            simParams.showDayNight = e.target.checked;
+        });
+
     }
 
     async function handleSatelliteDropdownChange(event) {
@@ -837,9 +846,6 @@
         return `${timePart} UTC  ${datePart}`;
     }
 
-
-    // main.js — revised animate() with time‑warp, Earth‑sync GEO, and auto‑tracking
-    // ---------------------------------------------------------------------------
     function animate() {
         requestAnimationFrame(animate);
 
@@ -859,7 +865,7 @@
             controls.update();
         }
 
-        /*── Simulation clock (minutes·timeWarp per real‑second) ──*/
+        /*── Simulation clock (minutes·timeWarp per real-second) ──*/
         const dtReal = clock.getDelta();
         simParams.simDate = new Date(
             simParams.simDate.getTime() + dtReal * 1000 * 60 * simParams.timeWarp
@@ -873,8 +879,7 @@
         const gmstNow = satellite.gstime(jDay);
         const rotY = -gmstNow;                               // scene rotation
 
-        /* update slider read‑out with UTC simulation time */
-        /*── update slider read‑out (factor | UTC time) ──*/
+        /*── update slider read-out (factor | UTC time) ──*/
         if (timeWarpVal) {
             const pad = n => n.toString().padStart(2, '0');
             const utcStr =
@@ -886,12 +891,8 @@
                 `${pad(simNow.getUTCSeconds())}`;
             document.getElementById("utcClockDisplay").textContent = formatUTCString(simParams.simDate);
 
-            if (simParams.timeWarp < 1)
-                timeWarpVal.textContent = `0`;
-            else
-                timeWarpVal.textContent = `${simParams.timeWarp}`;
+            timeWarpVal.textContent = simParams.timeWarp < 1 ? '0' : `${simParams.timeWarp}`;
         }
-
 
         /*── Earth rotation ──*/
         if (earthMesh) earthMesh.rotation.y = rotY;
@@ -957,30 +958,20 @@
             );
         }
 
-        /*── Auto‑track selected satellite ──*/
-        /*──────── Earth‑centred “chase” camera ────────*/
+        /*──────── Earth-centred “chase” camera ────────*/
         if (!cameraMove && controls && currentSelectedSatellite?.mesh?.visible) {
-
-            // Satellite position (sprite or detailed model)
             const satPos = detailedSatelliteModel
                 ? detailedSatelliteModel.position
                 : currentSelectedSatellite.mesh.position;
 
-            // Unit vector from Earth centre → satellite
             const dir = satPos.clone().normalize();
-
-            // Offset camera *behind* the satellite along that line.
-            // Here we stay one Earth radius farther out than the satellite.
             const camPos = satPos.clone().add(dir.multiplyScalar(EARTH_SCENE_RADIUS));
-
-            // Update camera & OrbitControls
-            //camera.position.copy(camPos);   // move camera
+            //camera.position.copy(camPos); // if you wish to move camera itself
             controls.target.set(0, 0, 0);   // always look at Earth centre
-            controls.update();              // refresh matrices
+            controls.update();
         }
 
-
-        /*── Render 3‑D vs Mercator ──*/
+        /*── Render 3-D vs Mercator ──*/
         const show3D = simParams.view3D;
         if (renderer) renderer.domElement.style.display = show3D ? 'block' : 'none';
         if (show3D) {
@@ -989,7 +980,10 @@
         } else {
             ['labelXecr', 'labelYecr', 'labelZecr',
                 'labelNorthPole', 'labelEquatorLine', 'labelGreenwichMeridian']
-                .forEach(id => document.getElementById(id)?.style && (document.getElementById(id).style.display = 'none'));
+                .forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
         }
 
         if (mercatorContainer) {
@@ -1003,15 +997,18 @@
                         mercatorCanvasElement.width = w;
                         mercatorCanvasElement.height = h;
                     }
-                    updateMercatorMap();
+                    updateMercatorMap(simParams);
                 }
             } else {
                 mercatorContainer.style.display = 'none';
             }
         }
 
+        /*── Day / Night shading ──*/
+        if (simParams.showDayNight) {
+            drawDayNight3D(scene, earthMesh, simNow, simParams.showDayNight, EARTH_SCENE_RADIUS );         // your scene-scale Earth radius);
+        }
     }
-
 
     function onWindowResize() {
         if (camera && renderer) {
