@@ -55,7 +55,7 @@ A web-based application to visualize satellite orbits in real-time in both 3D an
 * **2D Mercator Map View:**
     * 2D Mercator projection of Earth.
     * Real-time plotting of satellite ground tracks.
-    * Day/Night terminator overlay.
+    * Day/Night terminator overlay using a high accuracy NOAA SPA solar model.
     * Labels for satellites with leader lines and basic overlap avoidance.
 * **Interactive Controls Panel:**
     * **Menu Visibility:** Toggle button (☰/✕) to show/hide the entire controls panel with a sliding animation.

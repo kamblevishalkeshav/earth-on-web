@@ -6,21 +6,10 @@
 
 import * as THREE from 'three';
 
-/* ≡≡ Quick-and-clean solar position (accuracy ≈0.25°) ≡≡ */
+/* ≡≡ Sun position in ECI frame from Date using NOAA SPA (high accuracy) ≡≡ */
 function sunEciUnit(date) {
-    const d = (Date.UTC(
-        date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(),
-        date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()
-    ) / 86400000) - 10957.5;                // days since J2000
-    const g  = THREE.MathUtils.degToRad((357.529 + 0.98560028 * d) % 360); // mean anomaly
-    const q  = THREE.MathUtils.degToRad((280.459 + 0.98564736 * d) % 360); // mean longitude
-    const L  = q + THREE.MathUtils.degToRad(1.915) * Math.sin(g)
-        + THREE.MathUtils.degToRad(0.020) * Math.sin(2*g);        // ecliptic longitude
-    const e  = THREE.MathUtils.degToRad(23.439 - 0.00000036 * d);          // obliquity
-    const xs = Math.cos(L);
-    const ys = Math.cos(e) * Math.sin(L);
-    const zs = Math.sin(e) * Math.sin(L);
-    return new THREE.Vector3(xs, ys, zs).normalize();                      // in ECI
+    const jd = date.valueOf() / 86400000 + 2440587.5;
+    return sunECI(jd);
 }
 
 /* ≡≡ Convert ECI → ECF unit-vector using GMST (rad) ≡≡ */
@@ -105,14 +94,22 @@ export function gmstFromJD(jd) {
 
 /* ≡≡ Sun position in ECI frame (unit vector) from Julian Day ≡≡ */
 export function sunECI(jd) {
-    const n  = jd - 2451545.0;                                  // days since J2000
-    const g  = THREE.MathUtils.degToRad((357.529 + 0.98560028 * n) % 360);
-    const q  = THREE.MathUtils.degToRad((280.459 + 0.98564736 * n) % 360);
-    const L  = q + THREE.MathUtils.degToRad(1.915) * Math.sin(g)
-        + THREE.MathUtils.degToRad(0.020) * Math.sin(2 * g);   // ecliptic longitude
-    const e  = THREE.MathUtils.degToRad(23.439 - 0.00000036 * n); // obliquity
-    const x  = Math.cos(L);
-    const y  = Math.cos(e) * Math.sin(L);
-    const z  = Math.sin(e) * Math.sin(L);
+    const T   = (jd - 2451545.0) / 36525.0;                     // Julian centuries since J2000
+    const L0  = (280.46646 + T * (36000.76983 + T * 0.0003032)) % 360;
+    const M   = (357.52911 + T * (35999.05029 - 0.0001537 * T)) % 360;
+    const C   = Math.sin(THREE.MathUtils.degToRad(M)) * (1.914602 - T * (0.004817 + 0.000014 * T))
+              + Math.sin(THREE.MathUtils.degToRad(2 * M)) * (0.019993 - 0.000101 * T)
+              + Math.sin(THREE.MathUtils.degToRad(3 * M)) * 0.000289;            // equation of center
+    const trueLong = L0 + C;
+    const omega = 125.04 - 1934.136 * T;
+    const lambda = trueLong - 0.00569 - 0.00478 * Math.sin(THREE.MathUtils.degToRad(omega));
+    const epsilon0 = 23 + (26 + (21.448 - T * (46.815 + T * (0.00059 - 0.001813 * T))) / 60) / 60;
+    const epsilon  = epsilon0 + 0.00256 * Math.cos(THREE.MathUtils.degToRad(omega));
+    const lambdaRad  = THREE.MathUtils.degToRad(lambda);
+    const epsilonRad = THREE.MathUtils.degToRad(epsilon);
+
+    const x = Math.cos(lambdaRad);
+    const y = Math.cos(epsilonRad) * Math.sin(lambdaRad);
+    const z = Math.sin(epsilonRad) * Math.sin(lambdaRad);
     return new THREE.Vector3(x, y, z).normalize();
 }
