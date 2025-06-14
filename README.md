@@ -163,9 +163,7 @@ Contributions, issues, and feature requests are welcome! Please feel free to:
 
 ## License
 
-*(Consider adding a license here, e.g., MIT License. If you choose one, create a `LICENSE` file in your repository root.)*
-
-This project is currently unlicensed. You are free to use, modify, and distribute it, but please consider providing attribution.
+This project is licensed under the [MIT License](LICENSE).
 
 ## Acknowledgements
 
