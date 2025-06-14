@@ -1,6 +1,10 @@
 {
   "name": "openbexi_orbit",
   "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/dayNight.test.js"
+  },
   "dependencies": {
   }
 }
