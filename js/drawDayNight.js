@@ -93,3 +93,26 @@ export function drawDayNight3D(scene, earthMesh, date = new Date()) {
         sECF.y * AU
     );
 }
+
+/* ≡≡ Greenwich Mean Sidereal Time from Julian Day (rad) ≡≡ */
+export function gmstFromJD(jd) {
+    const T  = (jd - 2451545.0) / 36525.0;
+    let gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0)
+        + 0.000387933 * T * T - (T * T * T) / 38710000;
+    gmst = ((gmst % 360) + 360) % 360; // wrap 0-360
+    return THREE.MathUtils.degToRad(gmst);
+}
+
+/* ≡≡ Sun position in ECI frame (unit vector) from Julian Day ≡≡ */
+export function sunECI(jd) {
+    const n  = jd - 2451545.0;                                  // days since J2000
+    const g  = THREE.MathUtils.degToRad((357.529 + 0.98560028 * n) % 360);
+    const q  = THREE.MathUtils.degToRad((280.459 + 0.98564736 * n) % 360);
+    const L  = q + THREE.MathUtils.degToRad(1.915) * Math.sin(g)
+        + THREE.MathUtils.degToRad(0.020) * Math.sin(2 * g);   // ecliptic longitude
+    const e  = THREE.MathUtils.degToRad(23.439 - 0.00000036 * n); // obliquity
+    const x  = Math.cos(L);
+    const y  = Math.cos(e) * Math.sin(L);
+    const z  = Math.sin(e) * Math.sin(L);
+    return new THREE.Vector3(x, y, z).normalize();
+}
