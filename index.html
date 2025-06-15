@@ -982,15 +982,13 @@
         }
 
         /*── 👣 Footprint ───────────────────────────────────────────*/
-        updateMercatorMap(simParams);
         if (simParams.showFootprint) {
-            const entry = updateFootprints(
-                currentSelectedSatellite, gmstNow,
-                { showFootprint: true, mercatorCtx }
+            updateFootprints(
+                detailedSatelliteModel?.userData || currentSelectedSatellite,
+                gmstNow,
+                { showFootprint: true, mercatorCtx: null }
             );
-            //console.log(entry?.mercShapes.length);
         }
-
         /*───────────────────────────────────────────────────────────*/
 
 
@@ -1021,6 +1019,13 @@
                         mercatorCanvasElement.height = h;
                     }
                     updateMercatorMap(simParams);
+                    if (simParams.showFootprint) {
+                        updateFootprints(
+                            detailedSatelliteModel?.userData || currentSelectedSatellite,
+                            gmstNow,
+                            { showFootprint: true, mercatorCtx }
+                        );
+                    }
                 }
             } else {
                 mercatorContainer.style.display = 'none';

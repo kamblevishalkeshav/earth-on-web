@@ -18,6 +18,11 @@ import {KM_TO_SCENE_UNITS, EARTH_RADIUS_KM} from './SatelliteConstantLoader.js';
 let _scene, _mercCtx;
 const _cache = new Map(); // satId → { globeGroup, mercShapes }
 
+function getSatId(sat) {
+    return sat?.noradId ?? sat?.norad_id ?? sat?.satellite_id ??
+        sat?.updatedNoradId ?? sat?.meta?.norad_id ?? sat?.name;
+}
+
 /* palette helpers */
 const PALETTE = ['#ff4c4c', '#ff8c1a', '#ffd21a', '#66cc33', '#3399ff', '#9966ff', '#ff66cc'];
 const beamColor = id => PALETTE[id % PALETTE.length];
@@ -47,12 +52,15 @@ export function updateFootprints(selectedSat, _gmst, {showFootprint, mercatorCtx
     _cache.forEach(e => e.globeGroup.visible = false);
     if (!selectedSat) return undefined;
 
-    if (!_cache.has(selectedSat.satellite_id)) {
+    const id = getSatId(selectedSat);
+    if (!id) return undefined;
+
+    if (!_cache.has(id)) {
         const entry = buildEntry(selectedSat);
-        _cache.set(selectedSat.satellite_id, entry);
+        _cache.set(id, entry);
         _scene.add(entry.globeGroup);
     }
-    const entry = _cache.get(selectedSat.satellite_id);
+    const entry = _cache.get(id);
     entry.globeGroup.visible = !!showFootprint;
 
     if (mercatorCtx) drawMercator(mercatorCtx, showFootprint ? entry : null);
