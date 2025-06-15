@@ -35,6 +35,7 @@
         mercatorContainer,
         mapHeight,
         mapWidth,
+        mercatorCtx,
         initMercatorView, updateMercatorMap
     } from './js/mercatorMapLoader.js';
     import {drawDayNight3D} from './js/drawDayNight.js';
@@ -58,9 +59,10 @@
     import {KM_TO_SCENE_UNITS, EARTH_SCENE_RADIUS} from './js/SatelliteConstantLoader.js';
     import {satellites, updateOrbitTrajectory, setupTLESatellites, removeAllGeometry} from './js/satelliteTLELoader.js';
     import {createYPRFrame, updateYPRFrame, setYPRVisibility} from './js/satelliteYawPitchRollLoader.js';
+    import {initFootprintRenderer, updateFootprints} from './js/satelliteFootprintLoader.js';
 
     // Load menu
-    const versionNumber = "1.0l";
+    const versionNumber = "1.0m";
     const versionRepoUrl = "https://github.com/arcazj/openbexi_earth_orbit";
     const versionText = `version ${versionNumber} - hosted at`;
     document.getElementById('ob_menu').innerHTML = satelliteMenuLoader();
@@ -88,7 +90,8 @@
         showYPR: false,
         showDayNight: false,
         simDate: new Date(),
-        timeWarp: 1
+        timeWarp: 1,
+        showFootprint: false
     };
 
     let orbitTypeFilterSelect, companyFilterSelect, satelliteCountDisplay;
@@ -153,6 +156,7 @@
             }
         );
     }
+
     function init3D() {
         /* ───────── Scene, Camera, Renderer ───────── */
         scene = new THREE.Scene();
@@ -165,7 +169,7 @@
         );
         camera.position.set(...sceneConfig.camera.position);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;        // allow Sun-light shadows (drawDayNight3D)
@@ -173,7 +177,7 @@
 
         /* expose for other modules (orbitFrame labels need them) */
         window.renderer = renderer;
-        window.camera   = camera;
+        window.camera = camera;
 
         /* ───────── Lighting ───────── */
         scene.add(new THREE.AmbientLight(0xffffff, 0.15)); // was 0.6 or similar
@@ -187,7 +191,7 @@
 
         /* ───────── Earth mesh ───────── */
         textureLoader = new THREE.TextureLoader();
-        const earthMat = new THREE.MeshPhongMaterial({ color: 0xffffff }); // texture applied later
+        const earthMat = new THREE.MeshPhongMaterial({color: 0xffffff}); // texture applied later
         earthMesh = new THREE.Mesh(
             new THREE.SphereGeometry(EARTH_SCENE_RADIUS, 64, 64),
             earthMat
@@ -208,9 +212,9 @@
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = controlsConfig.enableDamping;
         controls.dampingFactor = controlsConfig.dampingFactor;
-        controls.minDistance   = EARTH_SCENE_RADIUS * 1.4;   // prevent inside-Earth zoom
-        controls.maxDistance   = EARTH_SCENE_RADIUS * 20;    // generous zoom-out
-        controls.enableZoom    = true;
+        controls.minDistance = EARTH_SCENE_RADIUS * 1.4;   // prevent inside-Earth zoom
+        controls.maxDistance = EARTH_SCENE_RADIUS * 20;    // generous zoom-out
+        controls.enableZoom = true;
     }
 
     function setupHTMLControls() {
@@ -278,6 +282,12 @@
             } else
                 timeWarpVal.textContent = `${simParams.timeWarp}`;
         });
+
+        const showFootprintChk = document.getElementById('showFootprintCheckbox');
+        showFootprintChk.addEventListener('change', () => {
+            simParams.showFootprint = showFootprintChk.checked;
+        });
+
 
         // Event Listeners
         orbitTypeFilterSelect.addEventListener('change', (e) => {
@@ -389,8 +399,8 @@
         }
 
         const showDayNightToggle = document.getElementById('showDayNightToggle');
-        showDayNightToggle.checked   = simParams.showDayNight;   // set UI ↤ flag
-        simParams.showDayNight       = showDayNightToggle.checked;
+        showDayNightToggle.checked = simParams.showDayNight;   // set UI ↤ flag
+        simParams.showDayNight = showDayNightToggle.checked;
         showDayNightToggle.addEventListener('change', e => {
             simParams.showDayNight = e.target.checked;
         });
@@ -971,6 +981,19 @@
             controls.update();
         }
 
+        /*── 👣 Footprint ───────────────────────────────────────────*/
+        updateMercatorMap(simParams);
+        if (simParams.showFootprint) {
+            const entry = updateFootprints(
+                currentSelectedSatellite, gmstNow,
+                { showFootprint: true, mercatorCtx }
+            );
+            //console.log(entry?.mercShapes.length);
+        }
+
+        /*───────────────────────────────────────────────────────────*/
+
+
         /*── Render 3-D vs Mercator ──*/
         const show3D = simParams.view3D;
         if (renderer) renderer.domElement.style.display = show3D ? 'block' : 'none';
@@ -1006,7 +1029,7 @@
 
         /*── Day / Night shading ──*/
         if (simParams.showDayNight) {
-            drawDayNight3D(scene, earthMesh, simNow, simParams.showDayNight, EARTH_SCENE_RADIUS );         // your scene-scale Earth radius);
+            drawDayNight3D(scene, earthMesh, simNow, simParams.showDayNight, EARTH_SCENE_RADIUS);         // your scene-scale Earth radius);
         }
     }
 
@@ -1040,6 +1063,7 @@
             yprFrame = createYPRFrame(scene);          // after init3D()
             setYPRVisibility(yprFrame, false);
             initMercatorView(); // Initialize Mercator view (can be done after 3D)
+            initFootprintRenderer(scene, earthMesh, mercatorCtx);
             await setupTLESatellites(scene); // Load TLE data and create satellite sprites
 
             setupHTMLControls(); // Setup UI controls and their event listeners

@@ -244,8 +244,11 @@ export async function showSatellite(noradId, scene, updatedNoradId) {
             meta: sat.meta || {},
             orbit: sat.orbit || {},
             attitude: sat.attitude || sat.meta?.attitude || {},
-            capability: sat.attitudeCapability || {},
+            capability: sat.capability || {},
+            attitudeCapability: sat.attitudeCapability || {},
             payload: sat.payload || {},
+            geometry: sat.geometry || {},
+            footprints: sat.footprints || {},
             source: sat
         };
 

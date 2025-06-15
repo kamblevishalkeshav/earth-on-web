@@ -53,6 +53,8 @@ export function satelliteMenuLoader() {
     <label><input type="checkbox" id="showYPRToggle">    Yaw‑Pitch‑Roll</label>
   
     <label><input type="checkbox" id="showDayNightToggle" checked>Day/Night Shading</label>
+    <label class="checkbox-row"><input type="checkbox" id="showFootprintCheckbox"><span>Show Footprint</span>
+</label>
   </div>
 </div>
 

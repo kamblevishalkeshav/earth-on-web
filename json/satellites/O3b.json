@@ -36,6 +36,19 @@
       "maxPitch": 4,
       "canFlyInverted": true
     },
+    "footprints": {
+      "type": "FeatureCollection",
+      "features": [{
+        "type": "Feature",
+        "properties": { "beamId": 0 },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [[
+            [-60,10], [-50,15], [-45,5], [-60,10]
+          ]]
+        }
+      }]
+    },
     "orbital_slot": {
       "nominal": "<orbitType>",
       "operational_history": [
