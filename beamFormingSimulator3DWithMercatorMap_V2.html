@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Phased Array Beamforming Simulation</title>
+    <style>
+        /* --- General Layout and Styling --- */
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #111;
+            color: #eee;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* --- Control Menu Styling --- */
+        #menu {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 340px;
+            max-height: calc(100vh - 20px);
+            background-color: rgba(20, 20, 25, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 15px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            color: #ddd;
+            transition: transform 0.3s ease-in-out;
+            z-index: 10;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            color: #0af;
+            border-bottom: 1px solid #0af;
+            padding-bottom: 8px;
+            text-align: center;
+        }
+
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-size: 1em;
+            color: #eee;
+            border-bottom: 1px solid #555;
+            padding-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #444;
+            border-radius: 2px;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -6px;
+            width: 16px;
+            height: 16px;
+            background: #0af;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
+        .control-group select {
+            width: 100%;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 5px;
+            background: #333;
+            color: #eee;
+            border: 1px solid #555;
+        }
+
+        .control-group input[type="checkbox"] {
+            margin-right: 10px;
+            accent-color: #0af;
+            width: 16px;
+            height: 16px;
+        }
+
+        .value-display {
+            display: inline-block;
+            float: right;
+            font-family: 'Courier New', Courier, monospace;
+            color: #0f8;
+            font-weight: bold;
+            background-color: #222;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .checkbox-label:hover {
+            background-color: #333;
+        }
+
+        #per-feed-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #per-feed-table td {
+            padding: 4px;
+            vertical-align: top;
+            font-size: 0.8em;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        #per-feed-table td:hover {
+            background-color: rgba(0, 170, 255, 0.1);
+        }
+
+        .per-feed-label {
+            display: inline-block;
+            width: 65px; /* Give labels enough space */
+        }
+
+        #status-message {
+            display: none;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #ffc107;
+            color: #333;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* --- Responsive Design for Menu --- */
+        @media (max-width: 768px) {
+            #menu {
+                width: 100%;
+                max-height: 50%;
+                bottom: 0;
+                top: auto;
+                right: 0;
+                border-radius: 10px 10px 0 0;
+                border-left: none;
+                border-top: 1px solid #444;
+                transform: translateY(calc(100% - 40px)); /* Show a handle */
+            }
+            #menu:focus-within, #menu:hover {
+                transform: translateY(0);
+            }
+            h2 {
+                cursor: grab;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="container"></div>
+
+<div id="menu" tabindex="0">
+    <h2>Phased Array Controls</h2>
+    <div id="status-message"></div>
+
+    <h3>Array Geometry</h3>
+    <div class="control-group">
+        <label for="nx-slider">Feeds X (Nx)<span id="nx-value" class="value-display">4</span></label>
+        <input type="range" id="nx-slider" min="0" max="32" value="4" step="1">
+    </div>
+    <div class="control-group">
+        <label for="ny-slider">Feeds Y (Ny)<span id="ny-value" class="value-display">4</span></label>
+        <input type="range" id="ny-slider" min="0" max="32" value="4" step="1">
+    </div>
+    <div class="control-group">
+        <label for="spacing-slider">Feed Spacing (&lambda;)<span id="spacing-value" class="value-display">0.50</span></label>
+        <input type="range" id="spacing-slider" min="0.1" max="2.0" value="0.5" step="0.01">
+    </div>
+    <div class="control-group">
+        <label class="checkbox-label">
+            <input type="checkbox" id="hex-grid-checkbox">
+            <span>Use Hexagonal Grid</span>
+        </label>
+    </div>
+
+    <h3>Beamforming Parameters</h3>
+    <div class="control-group">
+        <label for="frequency-slider">Frequency (GHz)<span id="frequency-value" class="value-display">12.0</span></label>
+        <input type="range" id="frequency-slider" min="1" max="30" value="12" step="0.1">
+    </div>
+    <div class="control-group">
+        <label for="azimuth-slider">Azimuth Steer (&deg;)<span id="azimuth-value" class="value-display">0</span></label>
+        <input type="range" id="azimuth-slider" min="-90" max="90" value="0" step="1">
+    </div>
+    <div class="control-group">
+        <label for="elevation-slider">Elevation Steer (&deg;)<span id="elevation-value" class="value-display">0</span></label>
+        <input type="range" id="elevation-slider" min="-90" max="90" value="0" step="1">
+    </div>
+
+    <h3>Element &amp; Tapering</h3>
+    <div class="control-group">
+        <label for="element-pattern-select">Element Pattern</label>
+        <select id="element-pattern-select">
+            <option value="isotropic">Isotropic</option>
+            <option value="cosine" selected>Cosine</option>
+            <option value="sinc">Sinc</option>
+        </select>
+    </div>
+    <div class="control-group">
+        <label for="tapering-select">Amplitude Tapering</label>
+        <select id="tapering-select">
+            <option value="uniform">Uniform</option>
+            <option value="chebyshev">Chebyshev</option>
+            <option value="taylor">Taylor</option>
+        </select>
+    </div>
+    <div class="control-group" id="sll-control" style="display:none;">
+        <label for="sll-slider">Sidelobe Level (dB)<span id="sll-value" class="value-display">-30</span></label>
+        <input type="range" id="sll-slider" min="-60" max="-15" value="-30" step="1">
+    </div>
+
+    <h3>Visualization</h3>
+    <div class="control-group">
+        <label class="checkbox-label">
+            <input type="checkbox" id="map-toggle-checkbox">
+            <span>Show Map/Earth</span>
+        </label>
+    </div>
+    <div class="control-group">
+        <label for="vis-mode-select">Visualization Mode</label>
+        <select id="vis-mode-select">
+            <option value="map">2D Mercator Map</option>
+            <option value="earth" selected>3D Earth</option>
+        </select>
+    </div>
+
+    <div id="per-feed-controls-container"></div>
+</div>
+
+<script type="importmap">
+    {
+        "imports": {
+              "three": "https://unpkg.com/three@0.176.0/build/three.module.js",
+              "three/addons/": "https://unpkg.com/three@0.176.0/examples/jsm/",
+              "satellite.js": "https://unpkg.com/satellite.js@4.0.0/dist/satellite.min.js"
+        }
+    }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+    import {DragControls} from 'three/addons/controls/dragControls.js';
+
+
+    // --- Global Variables and Constants ---
+    let scene, camera, renderer, orbitControls, clock;
+    let beamMesh, antennaGroup, dragControls;
+    let mapScene, mapCamera, mapMesh, contourMesh;
+    let earthScene, earthCamera, earthControls, earthMesh, contourGroup3D;
+    let contourCanvas, contourCtx, contourTexture;
+    let elementPositions = [];
+    let highlightedFeedIndex = -1;
+    let currentGainData = [];
+
+    const BEAM_RESOLUTION_THETA = 64;
+    const BEAM_RESOLUTION_PHI = 128;
+    const SPEED_OF_LIGHT = 299792458; // m/s
+    const EARTH_RADIUS = 5;
+
+    const params = {
+        Nx: 4, Ny: 4, spacing: 0.5, isHexagonal: false,
+        frequency: 12.0, azimuth: 0, elevation: 0,
+        elementPattern: 'cosine', tapering: 'uniform', sll: -30,
+        showMap: false,
+        visMode: 'earth',
+        feedControls: []
+    };
+
+    let needsRecalculation = true;
+
+    // --- Initialization ---
+    function init() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111827);
+
+        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 20); // Adjusted initial camera
+        camera.lookAt(scene.position);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.autoClear = false;
+        document.getElementById('container').appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xaaaaaa));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(5, 10, 7.5);
+        scene.add(dirLight);
+
+        orbitControls = new OrbitControls(camera, renderer.domElement);
+        orbitControls.enableDamping = true;
+        orbitControls.dampingFactor = 0.05;
+
+        clock = new THREE.Clock();
+
+        // Removed main scene axes helper for a cleaner look
+        // scene.add(new THREE.AxesHelper(5));
+        const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x333333);
+        scene.add(gridHelper);
+
+        antennaGroup = new THREE.Group();
+        antennaGroup.rotation.x = -Math.PI / 2; // *** FIX: Rotate array to face down (towards Earth) ***
+        scene.add(antennaGroup);
+
+        const beamGeometry = new THREE.SphereGeometry(1, BEAM_RESOLUTION_PHI, BEAM_RESOLUTION_THETA);
+        const beamMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xFFC400, metalness: 0.2, roughness: 0.1, ior: 1.5,
+            transmission: 0.9, thickness: 0.5, transparent: false,
+            opacity: 0.2, wireframe: false, side: THREE.DoubleSide
+        });
+        beamMesh = new THREE.Mesh(beamGeometry, beamMaterial);
+        antennaGroup.add(beamMesh); // Attach beam to the antenna group so it rotates with it
+
+        setupMapOverlay();
+        setupEarthScene();
+        setupUI();
+        updateAntennaArrayGeometry();
+        animate();
+
+        window.addEventListener('resize', onWindowResize, false);
+    }
+
+    // --- UI Setup and Event Handlers ---
+    function setupUI() {
+        const controls = [
+            { id: 'nx-slider', param: 'Nx', valueId: 'nx-value', type: 'int' },
+            { id: 'ny-slider', param: 'Ny', valueId: 'ny-value', type: 'int' },
+            { id: 'spacing-slider', param: 'spacing', valueId: 'spacing-value', type: 'float' },
+            { id: 'frequency-slider', param: 'frequency', valueId: 'frequency-value', type: 'float' },
+            { id: 'azimuth-slider', param: 'azimuth', valueId: 'azimuth-value', type: 'int' },
+            { id: 'elevation-slider', param: 'elevation', valueId: 'elevation-value', type: 'int' },
+            { id: 'sll-slider', param: 'sll', valueId: 'sll-value', type: 'int' }
+        ];
+
+        controls.forEach(c => {
+            const slider = document.getElementById(c.id);
+            const valueDisplay = document.getElementById(c.valueId);
+
+            if (!slider || !valueDisplay) return;
+
+            const updateValue = () => {
+                const val = parseFloat(slider.value);
+                params[c.param] = c.type === 'int' ? Math.round(val) : val;
+                valueDisplay.textContent = val.toFixed(c.type === 'float' ? 2 : 0);
+                needsRecalculation = true;
+                if (c.param === 'Nx' || c.param === 'Ny' || c.param === 'spacing') {
+                    updateAntennaArrayGeometry();
+                }
+            };
+            slider.addEventListener('input', updateValue);
+        });
+
+        const initialValues = {
+            'nx-value': params.Nx, 'ny-value': params.Ny, 'spacing-value': params.spacing.toFixed(2),
+            'frequency-value': params.frequency.toFixed(1), 'azimuth-value': params.azimuth,
+            'elevation-value': params.elevation, 'sll-value': params.sll,
+        };
+        for (const id in initialValues) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = initialValues[id];
+        }
+
+        document.getElementById('hex-grid-checkbox').addEventListener('change', e => {
+            params.isHexagonal = e.target.checked;
+            updateAntennaArrayGeometry();
+            needsRecalculation = true;
+        });
+
+        document.getElementById('map-toggle-checkbox').addEventListener('change', e => {
+            params.showMap = e.target.checked;
+        });
+
+        document.getElementById('vis-mode-select').addEventListener('change', e => {
+            params.visMode = e.target.value;
+            needsRecalculation = true;
+        });
+
+        const taperingSelect = document.getElementById('tapering-select');
+        const sllControl = document.getElementById('sll-control');
+        taperingSelect.addEventListener('change', e => {
+            params.tapering = e.target.value;
+            sllControl.style.display = (params.tapering === 'chebyshev' || params.tapering === 'taylor') ? 'block' : 'none';
+            needsRecalculation = true;
+        });
+
+        document.getElementById('element-pattern-select').addEventListener('change', e => {
+            params.elementPattern = e.target.value;
+            needsRecalculation = true;
+        });
+    }
+
+    function updatePerFeedControls() {
+        const container = document.getElementById('per-feed-controls-container');
+        params.feedControls = [];
+        const totalFeeds = elementPositions.length;
+        if (totalFeeds === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let tableHTML = '<h3>Per-Feed Adjustments</h3><table id="per-feed-table"><tbody>';
+        const numCols = 2;
+
+        for (let i = 0; i < totalFeeds; i++) {
+            params.feedControls.push({ phase: 0, amplitude: 1.0 });
+            if (i % numCols === 0) tableHTML += '<tr>';
+            tableHTML += `
+                    <td style="width: 50%;" data-index="${i}">
+                        <b>Feed ${i+1}</b><br>
+                        <label class="per-feed-label">Phase:<span id="phase-val-${i}" class="value-display">0</span></label>
+                        <input type="range" class="per-feed-slider" data-index="${i}" data-type="phase" min="-180" max="180" value="0" step="1">
+                        <label class="per-feed-label">Amplitude:<span id="amplitude-val-${i}" class="value-display">1.00</span></label>
+                        <input type="range" class="per-feed-slider" data-index="${i}" data-type="amplitude" min="0" max="1" value="1" step="0.01">
+                    </td>`;
+            if ((i + 1) % numCols === 0 || i === totalFeeds - 1) tableHTML += '</tr>';
+        }
+        tableHTML += '</tbody></table>';
+        container.innerHTML = tableHTML;
+
+        document.querySelectorAll('#per-feed-table td').forEach(cell => {
+            cell.addEventListener('mouseover', e => { highlightedFeedIndex = parseInt(e.currentTarget.dataset.index); });
+            cell.addEventListener('mouseout', () => { highlightedFeedIndex = -1; });
+        });
+
+        document.querySelectorAll('.per-feed-slider').forEach(slider => {
+            slider.addEventListener('input', e => {
+                const index = parseInt(e.target.dataset.index);
+                const type = e.target.dataset.type;
+                const value = parseFloat(e.target.value);
+                if (params.feedControls[index]) params.feedControls[index][type] = value;
+                const displayEl = document.getElementById(`${type}-val-${index}`);
+                if(displayEl) displayEl.textContent = value.toFixed(type === 'amplitude' ? 2 : 0);
+                needsRecalculation = true;
+            });
+        });
+    }
+
+
+    // --- Core Simulation Logic ---
+    function calculateElementPositions() {
+        const positions = [];
+        const { Nx, Ny, spacing, isHexagonal } = params;
+        const lambda = SPEED_OF_LIGHT / (params.frequency * 1e9);
+        const effSpacing = spacing * lambda;
+
+        const totalWidth = (Nx - 1) * effSpacing;
+
+        if (isHexagonal) {
+            const hexVertSpacing = effSpacing * Math.sqrt(3) / 2;
+            const totalHeight = (Ny - 1) * hexVertSpacing;
+            for (let j = 0; j < Ny; j++) {
+                const N_j = (j % 2 === 1 && Nx > 1) ? Nx - 1 : Nx;
+                const rowWidth = (N_j - 1) * effSpacing;
+                for (let i = 0; i < N_j; i++) {
+                    const x = i * effSpacing - rowWidth / 2;
+                    const y = j * hexVertSpacing - totalHeight / 2;
+                    positions.push(new THREE.Vector3(x, y, 0));
+                }
+            }
+        } else { // Square grid
+            const totalHeight = (Ny - 1) * effSpacing;
+            for (let j = 0; j < Ny; j++) {
+                for (let i = 0; i < Nx; i++) {
+                    const x = i * effSpacing - totalWidth / 2;
+                    const y = j * effSpacing - totalHeight / 2;
+                    positions.push(new THREE.Vector3(x, y, 0));
+                }
+            }
+        }
+        elementPositions = positions;
+    }
+
+    function getTaperingWeights() {
+        const { tapering, sll } = params;
+        const totalElements = elementPositions.length;
+        let weights = new Array(totalElements).fill(1.0);
+
+        if (tapering === 'uniform' || totalElements <= 1) return weights;
+
+        const center = new THREE.Vector2(0,0);
+        let max_r = 0;
+        elementPositions.forEach(p => { max_r = Math.max(max_r, new THREE.Vector2(p.x, p.y).distanceTo(center)); });
+        if (max_r === 0) max_r = 1;
+
+        if (tapering === 'chebyshev' || tapering === 'taylor') {
+            // Using a Hamming window as a reasonable approximation for radial tapering.
+            for (let n = 0; n < totalElements; n++) {
+                const r = new THREE.Vector2(elementPositions[n].x, elementPositions[n].y).distanceTo(center);
+                const normalized_pos = r / max_r;
+                weights[n] = 0.54 - 0.46 * Math.cos(2 * Math.PI * normalized_pos);
+            }
+        }
+
+        const maxWeight = Math.max(...weights);
+        if (maxWeight > 0) weights = weights.map(w => w / maxWeight);
+        return weights;
+    }
+
+    function getElementFactor(theta) {
+        switch (params.elementPattern) {
+            case 'cosine': return Math.max(0, Math.cos(theta));
+            case 'sinc':
+                const u = 1.8 * Math.PI * Math.sin(theta);
+                if (Math.abs(u) < 1e-6) return 1.0;
+                return Math.sin(u) / u;
+            default: return 1.0;
+        }
+    }
+
+    function calculateBeamPattern() {
+        const { frequency, azimuth, elevation } = params;
+        const gainData = Array(BEAM_RESOLUTION_THETA + 1).fill(0).map(() => Array(BEAM_RESOLUTION_PHI + 1).fill(0));
+        const lambda = SPEED_OF_LIGHT / (frequency * 1e9);
+        const k = 2 * Math.PI / lambda;
+        const az_rad = azimuth * Math.PI / 180;
+        const el_rad = elevation * Math.PI / 180;
+        const taperingWeights = getTaperingWeights();
+        const totalElements = elementPositions.length;
+
+        if(totalElements === 0) {
+            currentGainData = gainData;
+            return gainData;
+        }
+
+        const u0 = Math.sin(el_rad) * Math.cos(az_rad);
+        const v0 = Math.sin(el_rad) * Math.sin(az_rad);
+        const steeringPhases = elementPositions.map(pos => -k * (pos.x * u0 + pos.y * v0));
+
+        for (let i = 0; i <= BEAM_RESOLUTION_THETA; i++) {
+            const theta = (i / BEAM_RESOLUTION_THETA) * Math.PI;
+            const sin_theta = Math.sin(theta);
+            for (let j = 0; j <= BEAM_RESOLUTION_PHI; j++) {
+                const phi = (j / BEAM_RESOLUTION_PHI) * 2 * Math.PI;
+                let af_real = 0, af_imag = 0;
+                const u = sin_theta * Math.cos(phi);
+                const v = sin_theta * Math.sin(phi);
+
+                for (let n = 0; n < totalElements; n++) {
+                    const pos = elementPositions[n];
+                    const feedControl = params.feedControls[n] || {phase: 0, amplitude: 1.0};
+                    const pathPhase = k * (pos.x * u + pos.y * v);
+                    const totalPhase = pathPhase + steeringPhases[n] + (feedControl.phase * Math.PI / 180.0);
+                    const amplitude = taperingWeights[n] * feedControl.amplitude;
+                    af_real += amplitude * Math.cos(totalPhase);
+                    af_imag += amplitude * Math.sin(totalPhase);
+                }
+                const af_mag_sq = af_real * af_real + af_imag * af_imag;
+                const ef_mag = getElementFactor(theta);
+                gainData[i][j] = af_mag_sq * Math.pow(ef_mag, 2);
+            }
+        }
+        currentGainData = gainData;
+        return gainData;
+    }
+
+    // --- Visualization Update Functions ---
+    function updateAntennaArrayGeometry() {
+        while (antennaGroup.children.length > 1) { // Keep beamMesh
+            const child = antennaGroup.children[antennaGroup.children.length-1];
+            if(child !== beamMesh) antennaGroup.remove(child);
+        }
+        calculateElementPositions();
+
+        const elementGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+        const elementMaterial = new THREE.MeshPhongMaterial({ color: 0xffaa00 });
+
+        const draggableObjects = [];
+        elementPositions.forEach(pos => {
+            const elementMesh = new THREE.Mesh(elementGeometry, elementMaterial.clone());
+            elementMesh.position.copy(pos);
+            antennaGroup.add(elementMesh);
+            draggableObjects.push(elementMesh);
+        });
+
+        if (dragControls) dragControls.dispose();
+        dragControls = new DragControls(draggableObjects, camera, renderer.domElement);
+        dragControls.addEventListener('dragstart', () => orbitControls.enabled = false);
+        dragControls.addEventListener('dragend', () => orbitControls.enabled = true);
+        dragControls.addEventListener('drag', (event) => {
+            event.object.position.z = 0;
+            needsRecalculation = true;
+        });
+
+        updatePerFeedControls();
+        needsRecalculation = true;
+    }
+
+    function updateBeamMesh(gainData) {
+        const geometry = beamMesh.geometry;
+        const vertices = geometry.attributes.position.array;
+
+        let maxGain = 0;
+        gainData.forEach(row => row.forEach(val => { if (val > maxGain) maxGain = val; }));
+        if (maxGain === 0) maxGain = 1;
+
+        const scaleFactor = 5 / Math.sqrt(maxGain); // Smaller scale factor for better visualization
+
+        let vertexIndex = 0;
+        const sphereVertices = new THREE.SphereGeometry(1, BEAM_RESOLUTION_PHI, BEAM_RESOLUTION_THETA).attributes.position.array;
+
+        for (let i = 0; i <= BEAM_RESOLUTION_THETA; i++) {
+            for (let j = 0; j <= BEAM_RESOLUTION_PHI; j++) {
+                const gain = gainData[i][j] || 0;
+                const radius = Math.sqrt(gain) * scaleFactor;
+                const base_x = sphereVertices[vertexIndex], base_y = sphereVertices[vertexIndex + 1], base_z = sphereVertices[vertexIndex + 2];
+                vertices[vertexIndex++] = base_x * radius;
+                vertices[vertexIndex++] = base_y * radius;
+                vertices[vertexIndex++] = base_z * radius;
+            }
+        }
+        geometry.attributes.position.needsUpdate = true;
+        geometry.computeVertexNormals();
+    }
+
+    function setupEarthScene() {
+        earthScene = new THREE.Scene();
+        earthCamera = new THREE.PerspectiveCamera(50, 2, 0.1, 100);
+        earthCamera.position.z = 12;
+        earthControls = new OrbitControls(earthCamera, renderer.domElement);
+        earthControls.enableDamping = true;
+        earthControls.dampingFactor = 0.1;
+        earthControls.enabled = false;
+
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
+
+        const earthGeometry = new THREE.SphereGeometry(EARTH_RADIUS, 64, 64);
+        const earthMaterial = new THREE.MeshPhongMaterial({
+            map: loader.load('textures/earthmap1k.jpg'),
+            shininess: 5
+        });
+        earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
+        earthScene.add(earthMesh);
+        earthScene.add(new THREE.AmbientLight(0xffffff, 1.0));
+
+        contourGroup3D = new THREE.Group();
+        earthMesh.add(contourGroup3D);
+    }
+
+    function setupMapOverlay() {
+        mapScene = new THREE.Scene();
+        const mapWidth = 2, mapHeight = 1;
+        mapCamera = new THREE.OrthographicCamera(-mapWidth / 2, mapWidth / 2, mapHeight / 2, -mapHeight / 2, 1, 10);
+        mapCamera.position.z = 5;
+
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
+
+        const mapGeometry = new THREE.PlaneGeometry(mapWidth, mapHeight);
+        const mapMaterial = new THREE.MeshBasicMaterial({ color: 0x333366, transparent: true, opacity: 0.8 });
+        mapMesh = new THREE.Mesh(mapGeometry, mapMaterial);
+
+        loader.load('textures/earthmap1k.jpg',
+            texture => {
+                mapMesh.material.map = texture;
+                mapMesh.material.color.set(0xffffff);
+                mapMesh.material.needsUpdate = true;
+            },
+            undefined,
+            err => console.error("Could not load map texture.")
+        );
+        mapScene.add(mapMesh);
+
+        contourCanvas = document.createElement('canvas');
+        contourCanvas.width = 512;
+        contourCanvas.height = 256;
+        contourCtx = contourCanvas.getContext('2d');
+        contourTexture = new THREE.CanvasTexture(contourCanvas);
+
+        const contourGeometry = new THREE.PlaneGeometry(mapWidth, mapHeight);
+        const contourMaterial = new THREE.MeshBasicMaterial({ map: contourTexture, transparent: true });
+        contourMesh = new THREE.Mesh(contourGeometry, contourMaterial);
+        mapScene.add(contourMesh);
+    }
+
+    function getDbColor(dbValue) {
+        const normalized = Math.max(0, Math.min(1, (dbValue + 12) / 12));
+        const hue = (1 - normalized) * 240; // 240=blue, 0=red
+        return `hsl(${hue}, 100%, 50%)`;
+    }
+
+    function createTextSprite(text, position) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        context.font = 'Bold 32px Arial';
+        context.fillStyle = 'rgba(255, 255, 255, 1.0)';
+        context.fillText(text, 0, 32);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.scale.set(1, 0.5, 1.0);
+        sprite.position.copy(position).multiplyScalar(1.05); // Place it slightly above the surface
+        return sprite;
+    }
+
+    function updateContour() {
+        if (!currentGainData || currentGainData.length === 0) return;
+
+        let maxGain = 0;
+        currentGainData.forEach(row => row.forEach(val => { if (val > maxGain) maxGain = val; }));
+
+        contourCtx.clearRect(0, 0, contourCanvas.width, contourCanvas.height);
+        while(contourGroup3D.children.length > 0) contourGroup3D.remove(contourGroup3D.children[0]);
+
+        if (maxGain === 0) {
+            contourTexture.needsUpdate = true;
+            return;
+        }
+
+        const dbLevels = [-10, -6, -3, 0];
+
+        const euler = new THREE.Euler(-params.elevation * Math.PI / 180, -params.azimuth * Math.PI / 180, 0, 'YXZ');
+
+        dbLevels.forEach(db => {
+            const threshold = maxGain * Math.pow(10, db / 10);
+            const points = [];
+
+            for (let i = 0; i < BEAM_RESOLUTION_THETA; i++) {
+                for (let j = 0; j < BEAM_RESOLUTION_PHI; j++) {
+                    if (currentGainData[i][j] >= threshold && currentGainData[i][j] < threshold * 1.1) {
+                        const theta = (i / BEAM_RESOLUTION_THETA) * Math.PI;
+                        const phi = (j / BEAM_RESOLUTION_PHI) * 2 * Math.PI;
+                        points.push({theta, phi});
+                    }
+                }
+            }
+
+            if (points.length < 3) return;
+
+            const center_phi = params.azimuth * Math.PI / 180;
+            points.sort((a,b) => (a.phi - center_phi) - (b.phi - center_phi));
+
+            const points2D = [], points3D = [];
+            points.forEach(p => {
+                const vec = new THREE.Vector3().setFromSphericalCoords(1, p.theta, p.phi);
+                vec.applyEuler(euler);
+                const finalSpherical = new THREE.Spherical().setFromVector3(vec);
+                const lat = 90 - (finalSpherical.theta * 180 / Math.PI);
+                const lon = (finalSpherical.phi * 180 / Math.PI) - 180;
+
+                if(Math.abs(lon) > 180) return;
+
+                points2D.push({ x: (lon + 180) / 360 * contourCanvas.width, y: (90 - lat) / 180 * contourCanvas.height });
+
+                const pos3D = new THREE.Vector3().setFromSphericalCoords(EARTH_RADIUS, (90 - lat) * Math.PI / 180, lon * Math.PI / 180);
+                points3D.push(pos3D);
+            });
+
+            const color = getDbColor(db);
+            if(points2D.length > 2) {
+                contourCtx.strokeStyle = color;
+                contourCtx.lineWidth = 2;
+                contourCtx.beginPath();
+                points2D.forEach(p => contourCtx.lineTo(p.x, p.y));
+                contourCtx.closePath();
+                contourCtx.stroke();
+                contourCtx.fillStyle = "white";
+                contourCtx.font = "12px Arial";
+                contourCtx.fillText(`${db}dB`, points2D[0].x, points2D[0].y);
+            }
+
+            if(points3D.length > 2) {
+                const material = new THREE.LineBasicMaterial({ color: color, linewidth: 2, depthTest: false, depthWrite: false });
+                const geometry = new THREE.BufferGeometry().setFromPoints(points3D);
+                const line = new THREE.Line(geometry, material);
+                line.renderOrder = 1; // Render on top
+                contourGroup3D.add(line);
+                contourGroup3D.add(createTextSprite(`${db}dB`, points3D[0]));
+            }
+        });
+
+        contourTexture.needsUpdate = true;
+    }
+
+    function updateFeedHighlights() {
+        antennaGroup.children.forEach((feed, index) => {
+            if (feed === beamMesh) return;
+            if (index-1 === highlightedFeedIndex) {
+                feed.material.color.set(0x00ff00);
+                feed.material.emissive.set(0x00ff00);
+            } else {
+                feed.material.color.set(0xffaa00);
+                feed.material.emissive.set(0x000000);
+            }
+        });
+    }
+
+    // --- Animation Loop and Event Handlers ---
+    function animate() {
+        requestAnimationFrame(animate);
+
+        orbitControls.update(clock.getDelta());
+        updateFeedHighlights();
+        const statusMessage = document.getElementById('status-message');
+
+        if (needsRecalculation) {
+            const totalElements = elementPositions.length;
+            if (totalElements > 256) {
+                const estTime = Math.round(totalElements * totalElements / 10000);
+                if (statusMessage) {
+                    statusMessage.textContent = `Calculating beam... (~${estTime}s)`;
+                    statusMessage.style.display = 'block';
+                }
+            }
+
+            setTimeout(() => {
+                const gainData = calculateBeamPattern();
+                updateBeamMesh(gainData);
+                updateContour();
+                needsRecalculation = false;
+                if (statusMessage) statusMessage.style.display = 'none';
+            }, 10);
+        }
+
+        renderer.clear();
+        renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+        renderer.render(scene, camera);
+
+        if (params.showMap) {
+            renderer.clearDepth();
+            const mapRenderWidth = Math.min(window.innerWidth * 0.5, 600);
+            const mapRenderHeight = mapRenderWidth / 2;
+
+            const isEarthMode = params.visMode === 'earth';
+
+            renderer.setScissorTest(true);
+            renderer.setScissor(10, 10, mapRenderWidth, mapRenderHeight);
+            renderer.setViewport(10, 10, mapRenderWidth, mapRenderHeight);
+
+            if (isEarthMode) {
+                // Temporarily disable main controls to give priority to the earth controls
+                orbitControls.enabled = false;
+                earthControls.enabled = true;
+                earthControls.update();
+                renderer.render(earthScene, earthCamera);
+            } else {
+                earthControls.enabled = false;
+                orbitControls.enabled = true;
+                renderer.render(mapScene, mapCamera);
+            }
+            renderer.setScissorTest(false);
+        } else {
+            earthControls.enabled = false;
+            orbitControls.enabled = true;
+        }
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        earthCamera.aspect = (window.innerWidth * 0.5) / (window.innerWidth * 0.25);
+        earthCamera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    init();
+</script>
+</body>
+</html>
