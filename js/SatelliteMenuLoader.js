@@ -19,51 +19,49 @@ export function satelliteMenuLoader() {
   <div id="controlsContainer">
     <div id="versionDisplay"></div>
 
-   <div class="control-group">
-  <h3 data-collapsible-target="filtersContent">
-    Filters – Satellites Found: <span id="satelliteCountDisplay">36</span>
-    <span class="toggle-icon">▾</span>
-  </h3>
-  <div id="filtersContent" class="collapsible-content">
-    <div class="filter-column">
-      <label for="orbitTypeFilter">Orbit Type:</label>
-      <select id="orbitTypeFilter">
-        <option value="ALL">ALL</option>
-        <option value="LEO">LEO</option>
-        <option value="MEO" selected>MEO</option>
-        <option value="GEO">GEO</option>
-      </select>
+    <div class="control-group">
+      <h3 data-collapsible-target="filtersContent">
+        Filters – Satellites Found: <span id="satelliteCountDisplay">36</span>
+        <span class="toggle-icon">▾</span>
+      </h3>
+      <div id="filtersContent" class="collapsible-content">
+        <div class="filter-column">
+          <label for="orbitTypeFilter">Orbit Type:</label>
+          <select id="orbitTypeFilter">
+            <option value="ALL">ALL</option>
+            <option value="LEO">LEO</option>
+            <option value="MEO" selected>MEO</option>
+            <option value="GEO">GEO</option>
+          </select>
+        </div>
+
+        <div class="filter-column">
+          <label for="companyFilter">Company:</label>
+          <select id="companyFilter">
+            <option value="ALL COMPANY">ALL COMPANY</option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <div class="filter-column">
-      <label for="companyFilter">Company:</label>
-      <select id="companyFilter">
-        <option value="ALL COMPANY">ALL COMPANY</option>
-      </select>
+    <div class="control-group">
+      <h3 data-collapsible-target="viewContent">View <span class="toggle-icon">▾</span></h3>
+      <div id="viewContent" class="collapsible-content">
+        ${createViewToggle('view3DToggle', '3D Globe', true)}
+        ${createViewToggle('viewMercatorToggle', '2D Mercator')}
+        ${createViewToggle('highDefToggle', 'High Definition')}
+        ${createViewToggle('showECEFAxesToggle', 'ECEF Axes')}
+        ${createViewToggle('showOrbitFrameToggle', 'Orbit Frame (LVLH)')}
+        ${createViewToggle('showYPRToggle', 'Yaw-Pitch-Roll')}
+        ${createViewToggle('showDayNightToggle', 'Day/Night Shading', true)}
+        ${createViewToggle('showFootprintCheckbox', 'Show Footprint')}
+      </div>
     </div>
-  </div>
-</div>
-
-
-  <div class="control-group">
-  <h3 data-collapsible-target="viewContent">View <span class="toggle-icon">▾</span></h3>
-  <div id="viewContent" class="collapsible-content">
-    ${createViewToggle('view3DToggle', '3D Globe', true)}
-    ${createViewToggle('viewMercatorToggle', '2D Mercator')}
-    ${createViewToggle('highDefToggle', 'High Definition')}
-    ${createViewToggle('showECEFAxesToggle', 'ECEF Axes')}
-    ${createViewToggle('showOrbitFrameToggle', 'Orbit Frame (LVLH)')}
-    ${createViewToggle('showYPRToggle', 'Yaw-Pitch-Roll')}
-    ${createViewToggle('showDayNightToggle', 'Day/Night Shading', true)}
-    ${createViewToggle('showFootprintCheckbox', 'Show Footprint')}
-  </div>
-</div>
-
     
     <div class="control-group" id="yprControls" style="display:none;">
       <h3>Body-Frame Bias (deg)</h3>
       <label style="margin-bottom:4px; display:block;">Yaw:
-        <input type="range" id="yawSlider"   min="-180" max="180" step="0.1" value="0">
+        <input type="range" id="yawSlider" min="-180" max="180" step="0.1" value="0">
         <span id="yawVal">0</span>
       </label>
       <label style="margin-bottom:4px; display:block;">Pitch:
@@ -71,7 +69,7 @@ export function satelliteMenuLoader() {
         <span id="pitchVal">0</span>
       </label>
       <label style="display:block;">Roll:
-        <input type="range" id="rollSlider"  min="-180" max="180" step="0.1" value="0">
+        <input type="range" id="rollSlider" min="-180" max="180" step="0.1" value="0">
         <span id="rollVal">0</span>
       </label>
     </div>
@@ -95,6 +93,11 @@ export function satelliteMenuLoader() {
           <div style="font-weight:bold;">No satellite selected</div>
         </div>
       </div>
+    </div>
+
+    <div class="copyright-footer">
+      <div class="designer">Designed & Developed by Vishal Keshav Kamble</div>
+      <div class="company">© 2025 Technobug IT Solutions Private Limited</div>
     </div>
   </div>`;
 }
