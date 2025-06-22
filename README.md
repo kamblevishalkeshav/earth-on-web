@@ -91,21 +91,6 @@ earth-on-web/
 └── images/               # Project images and icons
 ```
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [CelesTrak](https://celestrak.org/NORAD) for TLE data
-- [satellite.js](https://github.com/shashwatak/satellite-js) for orbital calculations
-- [Three.js](https://threejs.org/) for 3D rendering
-- NASA for Earth textures
-
 ## 📸 Screenshots
 
 Here are some screenshots showcasing the application's features:
@@ -137,5 +122,17 @@ Here are some screenshots showcasing the application's features:
 ![Ground Track Display](assets/screenshots/9.png)
 *Ground track display with satellite footprint projection*
 
----
-[Add your screenshots here]
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [CelesTrak](https://celestrak.org/NORAD) for TLE data
+- [satellite.js](https://github.com/shashwatak/satellite-js) for orbital calculations
+- [Three.js](https://threejs.org/) for 3D rendering
+- NASA for Earth textures
