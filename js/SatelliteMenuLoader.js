@@ -4,6 +4,16 @@
 // Clean template‑literal version (easier to read / edit than string +).
 // -------------------------------------------------------------------
 
+function createViewToggle(id, label, checked = false) {
+    return `
+        <label class="toggle-switch" for="${id}">
+            <input type="checkbox" id="${id}" ${checked ? 'checked' : ''}>
+            <span class="toggle-label">${label}</span>
+            <span class="toggle-slider"></span>
+        </label>
+    `;
+}
+
 export function satelliteMenuLoader() {
     return /* html */ `
   <div id="controlsContainer">
@@ -11,50 +21,41 @@ export function satelliteMenuLoader() {
 
    <div class="control-group">
   <h3 data-collapsible-target="filtersContent">
-    Filters – Satellites Found: <span id="satelliteCountDisplay">0</span>
+    Filters – Satellites Found: <span id="satelliteCountDisplay">36</span>
     <span class="toggle-icon">▾</span>
   </h3>
   <div id="filtersContent" class="collapsible-content">
-  <div class="filter-column">
-    <label for="orbitTypeFilter">Orbit Type:</label>
-    <select id="orbitTypeFilter">
-      <option value="ALL">ALL</option>
-      <option value="LEO">LEO</option>
-      <option value="MEO">MEO</option>
-      <option value="GEO">GEO</option>
-    </select>
-  </div>
+    <div class="filter-column">
+      <label for="orbitTypeFilter">Orbit Type:</label>
+      <select id="orbitTypeFilter">
+        <option value="ALL">ALL</option>
+        <option value="LEO">LEO</option>
+        <option value="MEO" selected>MEO</option>
+        <option value="GEO">GEO</option>
+      </select>
+    </div>
 
-  <div class="filter-column">
-    <label for="companyFilter">Company:</label>
-    <select id="companyFilter">
-      <option value="ALL COMPANY">ALL COMPANY</option>
-    </select>
+    <div class="filter-column">
+      <label for="companyFilter">Company:</label>
+      <select id="companyFilter">
+        <option value="ALL COMPANY">ALL COMPANY</option>
+      </select>
+    </div>
   </div>
-</div>
-
 </div>
 
 
   <div class="control-group">
   <h3 data-collapsible-target="viewContent">View <span class="toggle-icon">▾</span></h3>
-
-  <!-- 2‑column grid -->
-  <div id="viewContent" class="collapsible-content"
-       style="display:grid;grid-template-columns:repeat(2,auto);column-gap:14px;row-gap:4px;">
-
-    <label><input type="checkbox" id="view3DToggle"      checked> 3D&nbsp;Globe</label>
-    <label><input type="checkbox" id="viewMercatorToggle"> 2D&nbsp;Mercator</label>
-
-    <label><input type="checkbox" id="highDefToggle">    High&nbsp;Definition</label>
-    <label><input type="checkbox" id="showECEFAxesToggle"> ECEF&nbsp;Axes</label>
-
-    <label><input type="checkbox" id="showOrbitFrameToggle"> Orbit&nbsp;Frame&nbsp;(LVLH)</label>
-    <label><input type="checkbox" id="showYPRToggle">    Yaw‑Pitch‑Roll</label>
-  
-    <label><input type="checkbox" id="showDayNightToggle" checked>Day/Night Shading</label>
-    <label class="checkbox-row"><input type="checkbox" id="showFootprintCheckbox"><span>Show Footprint</span>
-</label>
+  <div id="viewContent" class="collapsible-content">
+    ${createViewToggle('view3DToggle', '3D Globe', true)}
+    ${createViewToggle('viewMercatorToggle', '2D Mercator')}
+    ${createViewToggle('highDefToggle', 'High Definition')}
+    ${createViewToggle('showECEFAxesToggle', 'ECEF Axes')}
+    ${createViewToggle('showOrbitFrameToggle', 'Orbit Frame (LVLH)')}
+    ${createViewToggle('showYPRToggle', 'Yaw-Pitch-Roll')}
+    ${createViewToggle('showDayNightToggle', 'Day/Night Shading', true)}
+    ${createViewToggle('showFootprintCheckbox', 'Show Footprint')}
   </div>
 </div>
 
@@ -78,8 +79,7 @@ export function satelliteMenuLoader() {
     <div class="control-group">
       <h3 data-collapsible-target="orbitExtrasContent">Orbit/Extras <span class="toggle-icon">▾</span></h3>
       <div id="orbitExtrasContent" class="collapsible-content">
-        <input type="checkbox" id="showOrbitToggle">
-        <label for="showOrbitToggle" class="checkbox-label">Show Orbit</label>
+        ${createViewToggle('showOrbitToggle', 'Show Orbit')}
       </div>
     </div>
 

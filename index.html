@@ -64,7 +64,7 @@
     // Load menu
     const versionNumber = "1.0m";
     const versionRepoUrl = "https://github.com/arcazj/openbexi_earth_orbit";
-    const versionText = `version ${versionNumber} - hosted at`;
+    const versionText = `Earth on Web - version ${versionNumber}`;
     document.getElementById('ob_menu').innerHTML = satelliteMenuLoader();
 
     let scene, camera, renderer, earthMesh, controls;
@@ -223,14 +223,8 @@
         versionDisplayElement = document.getElementById('versionDisplay');
 
         if (versionDisplayElement) {
-            const versionLink = document.createElement('a');
-            versionLink.href = versionRepoUrl;
-            versionLink.textContent = `GitHub Repo`;
-            versionLink.target = "_blank"; // Open in new tab
-            versionDisplayElement.textContent = `${versionText} `;
-            versionDisplayElement.appendChild(versionLink);
+            versionDisplayElement.textContent = versionText;
         }
-
 
         orbitTypeFilterSelect = document.getElementById('orbitTypeFilter');
         companyFilterSelect = document.getElementById('companyFilter');
@@ -329,15 +323,22 @@
             });
         }
 
-        showOrbitToggle.addEventListener('change', (e) => {
+        showOrbitToggle.addEventListener('change', function(e) {
             simParams.showOrbit = e.target.checked;
-            if (currentSelectedSatellite) { // Check if a satellite object is selected
-                updateOrbitTrajectory(scene, simParams, currentSelectedSatellite); // Pass the satellite data object
-            } else if (simParams.showOrbit) {
-                // If showOrbit is checked but no satellite is selected, uncheck it
-                simParams.showOrbit = false;
+            if (currentSelectedSatellite) {
+                if (simParams.showOrbit) {
+                    // Clear any existing orbit lines first
+                    removeAllGeometry(scene);
+                    // Draw new orbit
+                    updateOrbitTrajectory(scene, simParams, currentSelectedSatellite);
+                } else {
+                    // Remove orbit lines when toggle is turned off
+                    removeAllGeometry(scene);
+                }
+            } else {
+                // If no satellite is selected, turn off the toggle
                 e.target.checked = false;
-                // Optionally, inform the user to select a satellite first
+                simParams.showOrbit = false;
             }
         });
 
@@ -408,48 +409,52 @@
     }
 
     async function handleSatelliteDropdownChange(event) {
-        const selectedNameInDropdown = event.target.value; // This is satellite_name or "None"
+        const selectedNameInDropdown = event.target.value;
         simParams.selectedSatelliteName = selectedNameInDropdown;
 
-        // If a detailed model was previously shown, ensure its corresponding TLE sprite is made visible again.
+        // Clear previous satellite and orbit
         if (detailedSatelliteModel && detailedSatelliteModel.userData && detailedSatelliteModel.userData.noradId) {
             const prevTleSat = satellites.find(s => s.norad_id.toString() === detailedSatelliteModel.userData.noradId.toString());
             if (prevTleSat && prevTleSat.mesh) {
-                prevTleSat.mesh.visible = true; // Make TLE sprite visible
+                prevTleSat.mesh.visible = true;
                 prevTleSat.isSelected = false;
-                // Reset visual cues for the TLE sprite if any were changed
                 prevTleSat.mesh.material.color.set(0xffffff);
                 prevTleSat.mesh.scale.set(...(satelliteConfig.scale || [0.1, 0.1, 0.1]));
             }
         }
 
-        clearDetailedSatelliteView(); // Clears current detailed model from scene
-        removeAllGeometry(scene); // Clears orbit lines
+        clearDetailedSatelliteView();
+        removeAllGeometry(scene);
 
         if (selectedNameInDropdown === "None") {
-            currentSelectedSatellite = null; // No TLE data object selected
+            currentSelectedSatellite = null;
             updateSatelliteInfo(satelliteInfoDiv, null);
             resetCameraToDefault();
-            // Ensure all TLE sprites are reset visually if needed (updateSatelliteList handles this based on currentSelectedSatellite)
-            updateSatelliteList(); // This will ensure correct visual state for sprites
+            updateSatelliteList();
+            // Reset orbit display when no satellite is selected
+            simParams.showOrbit = false;
+            if (showOrbitToggle) showOrbitToggle.checked = false;
             return;
         }
 
-        // Find the satellite data object from the `satellites` array by its name
         const tleSatData = satellites.find(s => s.satellite_name === selectedNameInDropdown && s.mesh && s.mesh.visible);
 
         if (!tleSatData) {
             console.warn(`Satellite named "${selectedNameInDropdown}" not found or not visible in current filter.`);
             currentSelectedSatellite = null;
             updateSatelliteInfo(satelliteInfoDiv, null);
-            // Potentially reset dropdown to "None" if the selected satellite is no longer valid
             if (satelliteSelectDropdown) satelliteSelectDropdown.value = "None";
             simParams.selectedSatelliteName = "None";
+            // Reset orbit display when satellite is not found
+            simParams.showOrbit = false;
+            if (showOrbitToggle) showOrbitToggle.checked = false;
             return;
         }
 
-        currentSelectedSatellite = tleSatData; // Store the actual satellite data object
+        currentSelectedSatellite = tleSatData;
         updateSatelliteInfo(satelliteInfoDiv, tleSatData);
+        
+        // Update orbit display based on current toggle state
         if (simParams.showOrbit) {
             updateOrbitTrajectory(scene, simParams, tleSatData);
         }
@@ -503,7 +508,6 @@
         } else {
             yprControls.style.display = 'block';
         }
-
     }
 
     async function loadAndDisplayDetailedSatellite(noradId, tleSatData, updatedNoradId) {
@@ -674,7 +678,7 @@
         };
 
         controls.enabled = false; // re‑enabled when the flight completes
-        controls.reset();             // OrbitControls’ built‑in reset
+        controls.reset();             // OrbitControls' built‑in reset
         camera.position.set(...sceneConfig.camera.position);
         controls.target.set(0, 0, 0);
     }
@@ -836,8 +840,8 @@
     }
 
     window.addEventListener('keydown', e => {
-        if (e.key === 'r') {            // press “r” to reset
-            controls.reset();             // OrbitControls’ built‑in reset
+        if (e.key === 'r') {            // press "r" to reset
+            controls.reset();             // OrbitControls' built‑in reset
             camera.position.set(...sceneConfig.camera.position);
             controls.target.set(0, 0, 0);
         }
@@ -968,7 +972,7 @@
             );
         }
 
-        /*──────── Earth-centred “chase” camera ────────*/
+        /*──────── Earth-centred "chase" camera ────────*/
         if (!cameraMove && controls && currentSelectedSatellite?.mesh?.visible) {
             const satPos = detailedSatelliteModel
                 ? detailedSatelliteModel.position

@@ -1,0 +1,97 @@
+{
+  "0": {
+    "name": "INTELSAT 902",
+    "meta": {
+      "norad_id": 26900,
+      "cospar_id": "2001-039A",
+      "orbital_slot": {
+        "nominal": "62.0°E",
+        "operational_history": [
+          "GEO at 62.0°E"
+        ]
+      }
+    },
+    "footprints": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "beamId": 1,
+            "name": "C-band Global Beam"
+          },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[
+              [20, -60],
+              [100, -60],
+              [100, 60],
+              [20, 60],
+              [20, -60]
+            ]]
+          }
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "beamId": 2,
+            "name": "Ku-band Spot Beam"
+          },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[
+              [40, -20],
+              [80, -20],
+              [80, 40],
+              [40, 40],
+              [40, -20]
+            ]]
+          }
+        }
+      ]
+    },
+    "geometry": {
+      "bus": {
+        "width_m": 2.8,
+        "height_m": 5.0,
+        "depth_m": 2.0
+      },
+      "solar_panels": [
+        {
+          "name": "North Solar Array",
+          "width_m": 2.5,
+          "length_m": 12.0,
+          "position_m": [0, 0, 7.0],
+          "orientation": "north"
+        },
+        {
+          "name": "South Solar Array",
+          "width_m": 2.5,
+          "length_m": 12.0,
+          "position_m": [0, 0, -7.0],
+          "orientation": "south"
+        }
+      ],
+      "antennas": [
+        {
+          "name": "C-band Global",
+          "type": "dish",
+          "band": "C",
+          "radius_m": 1.2,
+          "depth_m": 0.3,
+          "orientation": "nadir",
+          "position_m": [0, -1.5, 0]
+        },
+        {
+          "name": "Ku-band Spot",
+          "type": "dish",
+          "band": "Ku",
+          "radius_m": 0.8,
+          "depth_m": 0.2,
+          "orientation": "nadir",
+          "position_m": [0, -1.0, 0]
+        }
+      ]
+    }
+  }
+} 

@@ -1,9 +1,30 @@
+/* Base Variables */
+:root {
+    --cosmic-deep: #0a0b1e;
+    --cosmic-dark: #1a1b2e;
+    --cosmic-blue: #16213e;
+    --cosmic-purple: #2d1b69;
+    --cosmic-cyan: #00d4ff;
+    --cosmic-glow: #64ffda;
+    --cosmic-nebula: #7c3aed;
+    --orbit-red: #ff0000;
+    --ecef-green: #00ff80;
+    
+    --background: hsl(222, 84%, 5%);
+    --foreground: hsl(210, 40%, 98%);
+    --primary: hsl(188, 100%, 50%);
+    --secondary: hsl(217, 33%, 17%);
+    --border: hsl(217, 33%, 17%);
+}
+
 body {
   margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: radial-gradient(ellipse at center, var(--cosmic-dark) 0%, var(--cosmic-deep) 70%);
+  color: var(--foreground);
+  min-height: 100vh;
   overflow: hidden;
-  font-family: Arial, sans-serif;
-  background-color: #000;
-  color: #fff;
 }
 
 canvas {
@@ -32,16 +53,20 @@ canvas {
   position: fixed;
   top: 10px;
   left: 10px;
-  background-color: rgba(40, 40, 40, 0.9);
+  background: rgba(26, 27, 46, 0.3);
+  backdrop-filter: blur(16px);
   padding: 15px;
   border-radius: 8px;
-  width: 280px;
+  width: 300px;
   max-height: calc(100vh - 20px);
   overflow-y: auto;
   z-index: 1000;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
   transition: transform 0.3s ease-in-out;
-  transform: translateX(0%); /* Initially visible */
+  transform: translateX(0%);
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  color: var(--foreground);
+  box-sizing: border-box;
 }
 
 #controlsContainer.menu-hidden {
@@ -68,25 +93,23 @@ canvas {
   text-decoration: underline;
 }
 
-/* Control Groups within Menu */
+/* Control Groups - Fix Container Sizing */
 .control-group {
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #555;
-}
-
-.control-group:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
+    background: rgba(22, 33, 62, 0.5);
+    border: 1px solid rgba(100, 255, 218, 0.2);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 0 0 15px 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Collapsible Section Headers (H3) */
 #controlsContainer h3 {
-  color: #00aaff;
-  margin-top: 0;
-  margin-bottom: 10px;
+  color: #64ffda;
   font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 15px 0;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -131,7 +154,7 @@ canvas {
 /* Select Dropdowns */
 #controlsContainer select {
   width: 100%;
-  padding: 8px;
+  padding: 8px 35px 8px 12px; /* Increased right padding for arrow */
   border-radius: 4px;
   border: 1px solid #555;
   background-color: #333;
@@ -159,21 +182,21 @@ canvas {
   margin-top: 1px;
   color: #fff;
   font-family: monospace;
-  background-color: #222;
+  background: rgba(22, 33, 62, 0.5);
   padding: 10px;
   border-radius: 5px;
   font-size: 11px;
   white-space: pre-wrap; /* Preserve whitespace and newlines */
-  border: 1px solid #444;
+  border: 1px solid rgba(100, 255, 218, 0.2);
   max-height: 400px; /* Limit height and enable scroll if needed */
   overflow-y: auto;
 }
 
 /* Satellite Count Display */
 #satelliteCountDisplay {
-  font-size: 13px;
-  color: #00aaff;
-  font-weight: bold;
+  font-size: 14px;
+  color: #00d4ff;
+  font-weight: 500;
 }
 
 /* Mercator Map Styling */
@@ -276,36 +299,163 @@ canvas {
 
 /* Flex layout for filters */
 #filtersContent {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 15px 0;
+    width: 100%;
 }
 
-/* Filter column */
 .filter-column {
-  flex: 1 1 45%;
-  text-align: left;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Label styles */
-.filter-column label,
-.control-group label {
-  display: block;
-  margin: 4px 0;
-  color: #00aaff;
+.filter-column:first-child {
+    flex: 0.6; /* Reduced flex for Orbit Type to remove extra space */
+    width: auto;
+    min-width: 90px; /* Minimum width for MEO text + arrow */
 }
 
-/* Select box styling */
-.filter-column select {
-  width: 100%;
+.filter-column:last-child {
+    flex: 1.4; /* Increased flex for Company to give it more space */
+    width: auto;
+    min-width: 180px; /* More space for ALL COMPANY text */
+}
+
+.filter-column label {
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* Filter Dropdowns */
+select {
+    width: 100%;
+    padding: 8px 35px 8px 12px;
+    background: #2a2a2a;
+    border: 1px solid rgba(100, 255, 218, 0.2);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='14' height='8' viewBox='0 0 14 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L7 7L13 1' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: calc(100% - 10px) center;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+/* Adjust the dropdown options */
+select option {
+    padding: 8px 12px;
+    background: #2a2a2a;
+    width: 100%;
+}
+
+/* Filters section header */
+#controlsContainer h3[data-collapsible-target="filtersContent"] {
+    color: #00d4ff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    padding: 0;
+}
+
+#satelliteCountDisplay {
+    color: #00d4ff;
+    margin-left: 5px;
 }
 
 /* Grid layout for view options */
 #viewContent {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
-  column-gap: 14px;
-  row-gap: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px 0;
+}
+
+#viewContent .toggle-switch {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 5px 0;
+}
+
+.toggle-switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.toggle-label {
+    color: #00d4ff;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 auto 0 12px;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: rgba(22, 33, 62, 0.8);
+    border-radius: 24px;
+    transition: 0.3s;
+    margin-left: auto;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 2px;
+    bottom: 2px;
+    background: var(--background);
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggle-switch:before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00d4ff;
+    flex-shrink: 0;
+}
+
+/* Different colors for different types */
+.toggle-switch[for="view3DToggle"]:before { background: #00d4ff; }
+.toggle-switch[for="viewMercatorToggle"]:before { background: #64ffda; }
+.toggle-switch[for="highDefToggle"]:before { background: #7c3aed; }
+.toggle-switch[for="showECEFAxesToggle"]:before { background: var(--ecef-green); }
+.toggle-switch[for="showOrbitToggle"]:before { background: var(--orbit-red); }
+.toggle-switch[for="showFrameToggle"]:before { background: var(--cosmic-cyan); }
+.toggle-switch[for="showYPRToggle"]:before { background: #64ffda; }
+.toggle-switch[for="showDayNightToggle"]:before { background: #7c3aed; }
+.toggle-switch[for="showFootprintCheckbox"]:before { background: #06b6d4; }
+
+.toggle-switch input:checked + .toggle-label + .toggle-slider {
+    background: #00d4ff;
+}
+
+.toggle-switch input:checked + .toggle-label + .toggle-slider:before {
+    transform: translateX(20px);
 }
 
 /* Satellite info table */
@@ -314,7 +464,7 @@ canvas {
 }
 
 #satelliteInfo .meta-table td.v {
-  color: #ffd966;
+  color: var(--cosmic-cyan);
 }
 
 /* Slider label group */
@@ -337,6 +487,271 @@ canvas {
   border-radius: 6px;
   z-index: 999;
   box-shadow: 0 0 10px #00ccff;
+}
+
+#timeWarpBox {
+  background: rgba(26, 27, 46, 0.3);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  color: var(--cosmic-cyan);
+}
+
+#clockDisplay {
+  background: rgba(26, 27, 46, 0.3);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  color: var(--cosmic-cyan);
+}
+
+/* Cosmic Button Styles */
+.cosmic-button {
+  background: rgba(22, 33, 62, 0.5);
+  border: 1px solid rgba(100, 255, 218, 0.3);
+  color: var(--cosmic-cyan);
+  transition: all 0.3s;
+}
+
+.cosmic-button:hover {
+  background: rgba(0, 212, 255, 0.2);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+/* Satellite indicators */
+.satellite-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.satellite-indicator.iss { background: #00d4ff; }
+.satellite-indicator.starlink { background: #64ffda; }
+.satellite-indicator.terra { background: #7c3aed; }
+.satellite-indicator.aqua { background: #06b6d4; }
+
+/* Information Card Styles */
+#satelliteInfo {
+    background: rgba(22, 33, 62, 0.5);
+    border: 1px solid rgba(100, 255, 218, 0.2);
+    border-radius: 8px;
+    padding: 25px;
+    margin: 15px 0;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: monospace;
+    line-height: 1.6;
+    max-height: none;
+    overflow-y: visible;
+}
+
+/* Satellite info table styles */
+#satelliteInfo .meta-table {
+    width: 100%;
+    border-spacing: 0 8px;
+    font-size: 13px;
+}
+
+#satelliteInfo .meta-table td.k {
+    color: #ccc;
+    padding-right: 15px;
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+#satelliteInfo .meta-table td.v {
+    color: #ffd966;
+    word-break: break-word;
+    padding-left: 10px;
+}
+
+/* When no satellite is selected */
+#satelliteInfo div[style*="font-weight:bold"] {
+    padding: 10px 0;
+    color: #ccc;
+    text-align: center;
+}
+
+/* Section Headers */
+.section-header {
+    color: var(--cosmic-cyan);
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#filtersContent,
+#viewContent,
+#orbitExtrasContent {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+}
+
+.filter-column {
+    flex: 1;
+    min-width: 120px;
+    margin-right: 10px;
+}
+
+.toggle-switch[for="showOrbitToggle"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    cursor: pointer;
+    margin: 0;
+    padding: 5px 0;
+    background: transparent;
+    border: none;
+}
+
+.toggle-switch[for="showOrbitToggle"]:before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--orbit-red);
+    flex-shrink: 0;
+}
+
+.toggle-switch[for="showOrbitToggle"] .toggle-label {
+    color: var(--orbit-red);
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 auto 0 12px;
+}
+
+.toggle-switch[for="showOrbitToggle"] .toggle-slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: rgba(22, 33, 62, 0.8);
+    border-radius: 24px;
+    transition: 0.3s;
+    margin-left: auto;
+}
+
+.toggle-switch[for="showOrbitToggle"] .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 2px;
+    bottom: 2px;
+    background: var(--background);
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggle-switch[for="showOrbitToggle"] input:checked + .toggle-label + .toggle-slider {
+    background: var(--orbit-red);
+}
+
+.toggle-switch[for="showOrbitToggle"] input:checked + .toggle-label + .toggle-slider:before {
+    transform: translateX(20px);
+}
+
+#orbitExtrasContent {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px 0;
+}
+
+#orbitExtrasContent .toggle-switch {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 5px 0;
+}
+
+.toggle-switch[for="showOrbitToggle"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    cursor: pointer;
+    margin: 0;
+    padding: 5px 0;
+    background: transparent;
+    border: none;
+}
+
+.toggle-switch[for="showOrbitToggle"]:before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--orbit-red);
+    flex-shrink: 0;
+}
+
+.toggle-switch[for="showOrbitToggle"] .toggle-label {
+    color: var(--orbit-red);
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 auto 0 12px;
+}
+
+.toggle-switch[for="showOrbitToggle"] .toggle-slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: rgba(22, 33, 62, 0.8);
+    border-radius: 24px;
+    transition: 0.3s;
+    margin-left: auto;
+}
+
+.toggle-switch[for="showOrbitToggle"] .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 2px;
+    bottom: 2px;
+    background: var(--background);
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggle-switch[for="showOrbitToggle"] input:checked + .toggle-label + .toggle-slider {
+    background: var(--orbit-red);
+}
+
+.toggle-switch[for="showOrbitToggle"] input:checked + .toggle-label + .toggle-slider:before {
+    transform: translateX(20px);
+}
+
+/* Special styling for ECEF Axes toggle */
+.toggle-switch[for="showECEFAxesToggle"] .toggle-label {
+    color: var(--ecef-green);
+}
+
+.toggle-switch[for="showECEFAxesToggle"] input:checked + .toggle-label + .toggle-slider {
+    background: var(--ecef-green);
+}
+
+/* Special styling for Show Orbit toggle */
+.toggle-switch[for="showOrbitToggle"] .toggle-label {
+    color: var(--orbit-red);
+}
+
+.toggle-switch[for="showOrbitToggle"] input:checked + .toggle-label + .toggle-slider {
+    background: var(--orbit-red);
+}
+
+/* Special styling for Orbit Frame toggle */
+.toggle-switch[for="showFrameToggle"] .toggle-label {
+    color: var(--cosmic-cyan);
+}
+
+.toggle-switch[for="showFrameToggle"] input:checked + .toggle-label + .toggle-slider {
+    background: var(--cosmic-cyan);
 }
 
 
