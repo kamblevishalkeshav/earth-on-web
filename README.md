@@ -4,7 +4,7 @@ A modern web-based 3D Earth and satellite visualization platform that provides r
 
 ## 🌍 Live Demo
 
-Visit [Earth on Web](https://kamblevishalkeshav.github.io/earth-on-web/)
+Visit [Earth on Web](https://earth-on-web.netlify.app/)
 
 ## ✨ Features
 
