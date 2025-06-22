@@ -8,27 +8,70 @@ Visit [Earth on Web](https://kamblevishalkeshav.github.io/earth-on-web/)
 
 ## ✨ Features
 
-### 3D Visualization
-- Interactive 3D Earth model with high-definition textures
-- Real-time satellite tracking using TLE data
-- Multiple orbit types visualization (LEO, MEO, GEO)
-- Satellite footprint visualization
+### 🌐 3D Globe View
+- Interactive 3D Earth with high-definition texture
+- Dynamic satellite rendering using sprites with real-time TLE data positioning
+- Orbital path visualization for selected satellites
+- Advanced camera controls (orbit, zoom, pan) via Three.js OrbitControls
+- Toggleable High-Definition Earth texture for enhanced visualization
 - ECEF Axes and Orbit Frame (LVLH) visualization
 - Yaw-Pitch-Roll satellite orientation controls
 
-### Satellite Management
-- Dynamic satellite filtering by orbit type
-- Real-time position updates
-- Detailed satellite information display
-- Orbit path visualization
+### 🗺️ 2D Mercator Map View
+- Interactive 2D Mercator projection of Earth
+- Real-time satellite ground track plotting
+- Day/Night terminator overlay using high-accuracy NOAA SPA solar model
+- Intelligent satellite labeling with leader lines and overlap avoidance
 - Coverage area visualization for communication satellites
 
-### User Interface
-- Modern, intuitive controls using dat.GUI
-- Adjustable camera settings (FOV, Zoom)
-- Toggle controls for various visualizations
-- Color-coded orbit displays
-- Responsive design for various screen sizes
+### 🎮 Interactive Controls Panel
+- **Menu Navigation**
+  - Toggle button (☰/✕) for showing/hiding controls panel with sliding animation
+  - Version display with GitHub repository link
+  - Organized collapsible sections: "Filters," "View," and "Orbit/Extras"
+
+### 🔍 Filtering Capabilities
+- **Orbit Type Filtering**
+  - Filter by orbit category (ALL, LEO, MEO, GEO)
+  - Dynamic satellite count based on filter criteria
+- **Company Filtering**
+  - Filter satellites by operating company
+  - Automatically populated company list
+- Real-time updates of visible satellites
+
+### 👁️ View Options
+- **Multiple View Modes**
+  - 3D Globe (fullscreen)
+  - 2D Mercator map (fullscreen)
+  - Hybrid view (3D Globe with corner 2D Mercator map)
+- Toggle high-definition Earth texture
+- Customizable orbit display settings
+- Color-coded orbit visualization
+
+### 🛰️ Satellite Management
+- **Selection Interface**
+  - Dropdown list of visible satellites
+  - Detailed satellite information panel
+    - Company name
+    - Satellite name
+    - Orbit type
+    - Launch date
+    - NORAD ID
+    - TLE data
+- Real-time position updates
+- Dynamic satellite filtering
+- Orbit path visualization
+
+### 💾 Data Handling
+- **Asset Loading**
+  - TLE data and configuration from JSON files
+  - Primary loading from GitHub repository (master branch)
+  - Local path fallback system
+  - Hardcoded defaults as final fallback
+- **Real-time Updates**
+  - Dynamic TLE data processing
+  - Continuous position calculations
+  - Automatic UI updates
 
 ## 🛠 Technology Stack
 
